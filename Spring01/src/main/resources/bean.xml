@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+
+    <bean init-method="sayHi" destroy-method="sayBye" id="demoController" class="controller.DemoController" scope="singleton" lazy-init="true">
+        <property name="strs">
+            <array>
+                <value>你好</value>
+                <value>我好</value>
+                <value>大家好</value>
+            </array>
+        </property>
+        <property name="sList">
+            <list>
+                <value>极光之域</value>
+                <value>墨尘溪</value>
+                <value>绫地宁宁</value>
+            </list>
+        </property>
+    </bean>
+
+
+    <bean id="dog" class="utils.DemoUtils" factory-method="createDog"></bean>
+
+
+    <!--<bean class="org.springframework.context.support.PropertySourcesPlaceholderConfigurer">-->
+        <!--<property name="fileEncoding" value="utf-8"></property>-->
+        <!--<property name="location" value="classpath:db.properties"></property>-->
+    <!--</bean>-->
+    <context:property-placeholder file-encoding="utf-8" location="classpath:db.properties" system-properties-mode="FALLBACK"></context:property-placeholder>
+    <bean id="DBUtils" class="utils.DBUtils">
+        <property name="username" value="${username}"></property>
+        <property name="password" value="${password}"></property>
+    </bean>
+
+
+</beans>
