@@ -406,10 +406,15 @@ IDEA 全局设置
       	用于声明持久层
       - @Component
       	用于声明三层以外的通用组件
+      	
+    	
+  问题：那么，这四个注解交换使用会报错吗。如：持久层，我放@Service标记。
+
+  答：处理 @Controller 在 SpringMVC 里面有强制的要求，SpringMVC 的表示层必须使用 @Controller 组件注解。其他情况，用乱了是不会报错的，不过我们必须不能用乱。要遵守规范，不然别人无法跟你一起开发了。
   ~~~
-
   
-
+  
+  
   
 
 1. 编写一个类，通过 @Component 注解，将其配置 Spring 容器中（ 成为 Bean ）
@@ -732,7 +737,15 @@ IDEA 全局设置
 
 ##### 案例：三层结构
 
-###### UserDao
+###### Spring 配置文件
+
+~~~xml
+<context:component-scan base-package="com.dfbz"/>
+~~~
+
+
+
+###### dao
 
 1. 结构
 
@@ -758,7 +771,7 @@ IDEA 全局设置
 
    
 
-###### DbUtils
+###### DbUtils：**@Bean**
 
 1. 功能说明
 
@@ -771,11 +784,10 @@ IDEA 全局设置
 
    ~~~java
    /**
-    * @Bean：将方法的返回值作为 Bean 存入 Spring 容器
-    * 
-    * 
+    * @Bean
+    * 作用：将方法的返回值作为 Bean 存入 Spring 容器
+    * 		- 如：将 createDataSource() 的返回值 DataSource 放入容器
     */
-   
    @Component
    public class JdbcUtils {
    
@@ -796,8 +808,162 @@ IDEA 全局设置
    
    }
    ~~~
-
    
+- 另外，@Bean 还有另外一个特性
+  
+     ~~~java
+     /** 
+      * @Bean
+      * 功能：若创建 Bean 的方法需要参数，@Bean 会自动在容器中找
+      * 		- 如：getJdbcTemplate(DataSource ds) 
+      */
+     @Component
+     public class JdbcUtils {
+     
+         // 此处将不再声明 Datasource 为成员变量，改由传参的方式给 getJdbcTemplate()
+     
+         @Bean
+         public DataSource createDataSource() throws Exception {
+             Properties props = new Properties();
+             props.load(JdbcUtils.class.getResourceAsStream("/db.properties"));
+             return DruidDataSourceFactory.createDataSource(props);
+         }
+     
+         @Bean
+         public JdbcTemplate getJdbcTemplate(DataSource ds) {
+             return new JdbcTemplate(ds);
+         }    
+     
+     }
+     ~~~
+   
+   - 创建 DataSource 连接池，除了通过 getResourceAsStrem() 的方式，还可以通过 Spring 读取
+   
+     > 1. 在 Spring.xml 中配置
+     >
+     >    ~~~xml
+     >    <context:property-placeholder 
+     >                                  file-encoding="utf-8" 
+     >                                  location="classpath:db.properties"/>
+     >    ~~~
+     >
+     > 2. DbUtils
+     >
+     >    ~~~java
+     >    @Component
+     >    public class JdbcUtils {
+     >    
+     >        // 注入 Properties 属性值
+     >        @Value("${jdbc.driverClassName}")
+     >        private String driver;
+     >        @Value("${jdbc.url}")
+     >        private String url;
+     >        @Value("${jdbc.username}")
+     >        private String username;
+     >        @Value("${jdbc.password}")
+     >        private String password; 
+     >    
+     >        @Bean
+     >        public DataSource createDataSource() throws Exception {
+     >            // 注：只有 DruidDataSource 才有下面的四个方法
+     >            DruidDataSource ds = new DruidDataSource();
+     >            ds.setDriverClassName(driver);
+     >            ds.setUrl(url);
+     >            ds.setUsername(username);
+     >            ds.setPassword(password);
+     >            return ds;
+     >        }
+     >    
+     >        @Bean
+     >        public JdbcTemplate getJdbcTemplate(DataSource ds) {
+     >            return new JdbcTemplate(ds);
+     >        }    
+     >    
+     >    }
+     >    ~~~
+     >
+     >    
+   
+     
+
+###### service
+
+~~~java
+@Service("userService")
+public class UserServiceImpl implements UserService {
+
+    @Autowired
+    private UserDao userDao;
+    
+    // ... 业务
+}
+~~~
+
+
+
+
+
+###### controller
+
+~~~java
+@Controller("userController")
+public class UserController {
+
+    @Autowired
+    private UserService userService;
+
+    // ...
+}
+~~~
+
+
+
+###### Test
+
+- 方式一（经典）：
+
+  > 通过创建 Spring 容器（ApplicationContext）来实例化 Bean 对象
+
+  
+
+  ~~~java
+  public class UserTest {
+  
+      @Test
+      public void test() {
+          ApplicationContext ac = new ClassPathXmlApplicationContext("spring.xml");
+          UserService userService = ac.getBean("userService", UserService.class);
+          userService.listUser().forEach(x -> System.out.println(x));
+      }
+  
+  }
+  ~~~
+
+- 方式二：
+
+  > 通过 @RunWith 将测试类配置在 Spring 容器的环境下，直接完成 Bean 注入
+  >
+  > 通过 @ContextConfiguration(locations = { }) 指定 Spring 配置文件
+
+  
+
+  ~~~java
+  @RunWith(SpringJUnit4ClassRunner.class)
+  @ContextConfiguration(locations = {"classpath:spring.xml"})
+  public class UserTest {
+  
+      @Autowired
+      UserService userService;
+  
+      @Test
+      public void test() {
+          userService.listUser().forEach(x -> System.out.println(x));
+      }
+  
+  }
+  ~~~
+
+  
 
 
 
@@ -805,6 +971,25 @@ IDEA 全局设置
 
 
 
+##### 生命周期注解
+
+###### @Scope 作用域
+
+~~~txt
+value 属性值：
+
+- singleton：单例
+
+- prototype：多例
+
+- request：（web）Spring 将创建的对象放在 request 作用域中
+- session：（web）Spring 将创建的对象放在 session 作用域中
+- globalSession：（web）应用域集群环境，如果没有集群环境相当于 session
+~~~
+
+###### @PostConstruct 指定初始化方法
+
+###### @PreDestroy 指定销毁方法
 
 
 
@@ -812,6 +997,34 @@ IDEA 全局设置
 
 
 
+#### 纯注解
+
+- 说明
+
+  ~~~xml
+  <!--
+  	在使用了 @Component、@Autowired 和 @Bean 之后，Spring.xml 配置文件中就只剩下：
+  -->
+  <context:component-scan base-package=""/>
+  <context:property-placeholder location="" file-encoding=""/>
+  ~~~
+
+- 用 Java 类取代 Spring.xml
+
+
+
+
+
+##### 配置类
+
+~~~java
+@Configuration	// 声明这是 Spring 配置类
+@ComponentScan("com.dfbz")	// 配置包扫描
+@PropertySource("classpath:db.properties")	// 读取配置文件
+public class ConfigBean {
+
+}
+~~~
 
 
 
@@ -819,35 +1032,401 @@ IDEA 全局设置
 
 
 
+##### Test
+
+- 说明
+
+  ~~~txt
+  由于 Spring.xml 已不复存在，所以无法再通过读取配置文件的方式 getBean()
+  包括：
+      - ClassPathXmlApplicationContext
+      - FileSystemXmlApplicationContext
+      - @ContextConfiguration(locations={"classpath:spring.xml"})
+  ~~~
+
+- 方式一：创建 Spring 容器
+
+  ~~~java
+  public class UserTest {
+  
+      @Test
+      public void test() {
+          ApplicationContext ac;
+          ac = new AnnotationConfigApplicationContext(ConfigBean.class);
+          UserService userService = ac.getBean(UserService.class);
+          userService.listUser().forEach(x -> System.out.println(x));
+      }
+  
+  }
+  ~~~
+
+  
+
+- 使用 @ContextConfiguration(classes = { }) 加载 Spring 配置类
+
+  ~~~java
+  @RunWith(SpringJUnit4ClassRunner.class)
+  @ContextConfiguration(classes = {ConfigBean.class})
+  public class UserTest {
+  
+      @Autowired
+      UserController userController;
+  
+      @Test
+      public void test(){
+          userService.listUser().forEach(x -> System.out.println(x));
+      }
+  
+  }
+  ~~~
+
+  
+
+
+
+## **AOP**
+
+### 动态代理
+
+#### 原理
+
+~~~~txt
+代理类在程序运行时创建的代理方式被成为动态代理。
+----------------------------
+JDK动态代理有以下特点:
+
+- 代理对象的生成,是利用JDK的API,动态的在内存中构建代理对象(需要我们提供目标对象所实现的接口的字节码对象)
+
+- 动态代理要求目标对象一定要实现接口，所以也叫做接口代理！
+~~~~
+
+
+
+#### Proxy 动态代理
+
+1. 有一个接口：Player
+
+   ~~~java
+   public interface Player {
+       
+       void play();
+       
+   }
+   ~~~
+
+2. 它的实现类
+
+   ~~~java
+   public class MyPlayer implements Player {
+   
+       @Override
+       public void play() {
+           System.out.println("攻击！");
+       }
+       
+   }
+   ~~~
+
+3. Test
+
+   > - 内部类实现
+   >
+   >   ~~~java
+   >   @Test
+   >   public void test() {
+   >   
+   >       // 原对象
+   >       Player player = new MyPlayer();
+   >       player.play();        
+   >   
+   >       // 代理对象
+   >       Player proxyPlayer = (Player) Proxy.newProxyInstance(
+   >           player.getClass().getClassLoader(),
+   >           player.getClass().getInterfaces(),
+   >           new InvocationHandler() {
+   >               @Override
+   >               public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+   >                   System.out.println("蓄力！");
+   >                   Object result = method.invoke(player, args);
+   >                   System.out.println("魂吸！");
+   >                   return result;
+   >               }
+   >           });
+   >       proxyPlayer.play();
+   >   
+   >   }
+   >   ~~~
+   >
+   >   
+   >
+   > - 实现类实现（代理工厂）
+   >
+   >   ~~~java
+   >   /**
+   >    * 创建一个类，实现 InvocationHandler 接口 
+   >    */
+   >   public class ProxyFactory implements InvocationHandler {
+   >   
+   >       // 原对象
+   >       private Object sourceObject;
+   >   
+   >       // 通过构造方法注入原对象
+   >       public ProxyFactory(Object sourceObject) {
+   >           this.sourceObject = sourceObject;
+   >       }
+   >   
+   >       // 重写 invoke 方法
+   >       @Override
+   >       public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+   >           System.out.println("被代理的对象的方法被代理执行-前");
+   >           Object result =  method.invoke(sourceObject, args);
+   >           System.out.println("被代理的对象的方法被代理执行-后");
+   >           return result;
+   >       }
+   >   
+   >       // 创建代理对象
+   >       public Object createProxyObject() {
+   >           return Proxy.newProxyInstance(
+   >               sourceObject.getClass().getClassLoader(),
+   >               sourceObject.getClass().getInterfaces(),
+   >               this	// 现在 InvocationHandler 就是自己本身
+   >           );
+   >       }
+   >   
+   >   }
+   >   ~~~
+   >
+   >   ~~~java
+   >   @Test
+   >   public void test() {
+   >   
+   >       // 原对象
+   >       Player player = new MyPlayer();
+   >       player.play();
+   >   
+   >       // 由代理工厂创建代理对象
+   >       ProxyFactory factory = new ProxyFactory(player);
+   >       Player proxyPlayer = (Player) factory.createProxyObject();
+   >       proxyPlayer.play();
+   >   
+   >   }
+   >   ~~~
+   >
+   >   
 
 
 
 
 
+### AOP 名词
+
+#### JoinPoint 连接点
+
+#### Pointcut 切入点
+
+#### Advice 通知 / 增强
+
+##### 通知的类型
+
+~~~txt
+- 前置通知(Before)：执行连接点方法之前执行
+- 后置通知(After-returning)：目标方法
+- 环绕通知(Around)
+- 最终通知(After)
+- 异常通知(AfterThrowing)
+~~~
+
+
+
+#### Target 目标对象
+
+#### Waving 织入
+
+####  Proxy 代理
+
+#### Aspect 切面
 
 
 
 
 
+### 基于 XML 配置
+
+#### 1. 环境搭建
+
+- 需要新的依赖：
+
+  ~~~xml
+  <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aspects</artifactId>
+      <version>5.1.9.RELEASE</version>
+  </dependency>
+  ~~~
+
+- Spring.xml
+
+  ~~~xml
+  <!-- 包扫描 -->
+  <context:component-scan base-package="com.dfbz"/>
+  ~~~
+  
+  
+
+
+
+#### 2. 被通知（代理增强）的类
+
+~~~java
+@Component
+public class MyPlayer {
+
+    public void play() {
+        System.out.println("攻击");
+    }
+
+    public void eat() {
+        int i = 1 / 0;
+        System.out.println("吃吃吃，就知道吃！");
+
+    }
+
+    public void sleep() {
+        System.out.println("中午啦！还睡！猪吗你！");
+    }
+    
+}
+~~~
 
 
 
 
 
+#### 3. 创建切面类
+
+~~~java
+@Component
+public class AspectBean {
+
+    public void before() {
+        System.out.println("前置通知...");
+    }
+
+    public void afterReturning() {
+        System.out.println("后置通知...");
+    }
+
+    public void afterThrowing() throws Exception {
+        System.out.println("异常通知...");
+    }
+
+    public void after() {
+        System.out.println("最终通知...");
+    }
+
+    /**
+     * 环绕通知包含了前置通知和后置通知的功能
+     * 需要引入被代理的方法（有点类似 Proxy 的 method）
+     * 然后在方法执行的前后可以进行环绕
+     */
+    public Object around(ProceedingJoinPoint joinPoint) throws Throwable {
+        System.out.println("前置环绕...");
+        Object result = joinPoint.proceed();
+        System.out.println("后置环绕...");
+        return result;
+    }
+
+}
+~~~
 
 
 
 
 
+#### 4. 配置 AOP
+
+~~~xml
+<aop:config>
+    
+    <!-- 切点：配置切入点表达式（声明需要被通知的方法） -->
+    <aop:pointcut id="pc" expression="within(com.dfbz.MyPlayer)"/>
+    
+    <!-- 通知：导入切面类，进行通知配置 -->
+    <aop:aspect ref="aspectBean">
+        <aop:before method="before" pointcut-ref="pc"/>        
+        <aop:around method="around" pointcut-ref="pc"/>
+        <aop:after-returning method="afterReturning" pointcut-ref="pc"/>
+        <aop:after-throwing method="afterThrowing" pointcut-ref="pc"/>
+        <aop:after method="after" pointcut-ref="pc"/>
+    </aop:aspect>
+    
+</aop:config>
+~~~
+
+- 注：通知配置的顺序要严格控制！
+
+  
+
+- 关于各种通知
+
+  ~~~txt
+  after-throwing：目标方法抛出异常时调用，若目标方法没有对异常进行处理，则不会继续下面的操作（废话）
+  
+  after：无论有没有执行异常，最后都会调用（相当于 finally）
+  ~~~
+
+  
+
+  
+
+- 关于切入点表达式
+
+  > - within
+  >
+  >   ~~~txt
+  >   按类匹配
+  >   ~~~
+  >
+  >   
+  >
+  > - execution
+  >
+  >   ~~~txt
+  >   按方法
+  >   
+  >   * *..*.service.impl.*.*(..)
+  >   ~~~
+  >
+  > - 全局和局部
+  >
+  >   ~~~txt
+  >   除了向上面那样定义一个全局的切入点表达式，还可以在各个通知内部设置局部的切入点表达式。
+  >   pointcut
+  >   ~~~
+  >
+  >   
 
 
 
+#### 5. Test
 
+~~~java
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(locations = {"classpath:spring.xml"})
+public class DemoTest {
 
+    @Autowired
+    Player myPlayer;
 
+    @Test
+    public void test() {
+        myPlayer.play();
+        myPlayer.eat();
+        myPlayer.sleep();
+    }
 
-
-
+}
+~~~
 
 
 
