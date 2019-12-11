@@ -20,10 +20,6 @@ public class UserDaoImpl implements UserDao {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
-//
-//    @Autowired
-//    private DataSource ds;
-
 
     @Override
     public List<User> findAllUser() {

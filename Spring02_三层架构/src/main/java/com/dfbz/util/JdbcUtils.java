@@ -1,7 +1,9 @@
 package com.dfbz.util;
 
+import com.alibaba.druid.pool.DruidDataSource;
 import com.alibaba.druid.pool.DruidDataSourceFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Scope;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -22,8 +24,14 @@ import java.util.Properties;
 @Component
 public class JdbcUtils {
 
-    @Autowired
-    private DataSource ds;
+    @Value("${jdbc.driverClassName}")
+    private String driver;
+    @Value("${jdbc.url}")
+    private String url;
+    @Value("${jdbc.username}")
+    private String username;
+    @Value("${jdbc.password}")
+    private String password;
 
 
     @Bean
@@ -34,9 +42,12 @@ public class JdbcUtils {
     @Bean
 //    @Scope("prototype")
     public DataSource createDataSource() throws Exception {
-        Properties props = new Properties();
-        props.load(JdbcUtils.class.getResourceAsStream("/db.properties"));
-        return DruidDataSourceFactory.createDataSource(props);
+        DruidDataSource ds = new DruidDataSource();
+        ds.setDriverClassName(driver);
+        ds.setUrl(url);
+        ds.setUsername(username);
+        ds.setPassword(password);
+        return ds;
     }
 
 
