@@ -1434,5 +1434,631 @@ public class DemoTest {
 
 
 
+# MyBatis
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 日志
+
+---
+
+## 三大组件
+
+~~~txt
+Log4j 三大组件：
+	- Loggers（记录器）：日志的类别
+	- Appenders（输出源）：日志输出的地方
+	- Layouts（布局）：日志输出的形式
+~~~
+
+
+
+### Loggers
+
+~~~txt
+八个级别（范围）：ALL < TRACE < ( DEBUG < INFO < WARN < ERROR < FATAL ) < OFF
+
+    - ALL
+    	最低等级，用于打开所有日志记录。
+    - TRACE
+    	追踪。很低的日志级别，一般不会使用（压根儿不用）。
+    - DEBUG
+    	指出细粒度信息事件，对调试应用程序是非常有帮助的，主要用于开发过程中打印一些运行信息。
+    - INFO
+    	消息在粗粒度级别上突出强调应用程序的运行过程。打印一些你感兴趣的或者重要的信息。（用得最多）
+    	这个可以用于生产环境中输出程序运行的一些重要信息，但是不能滥用，避免打印过多的日志。
+    - WARN
+    	表明会出现潜在错误的情形，有些信息不是错误信息，但是也要给程序员的一些提示。
+    - ERROR
+    	指出虽然发生错误事件，但仍然不影响系统的继续运行。
+    	打印错误和异常信息，如果不想输出太多的日志，可以使用这个级别。（用得比较多）
+    - FATAL
+    	指出每个严重的错误事件将会导致应用程序的退出。
+    - OFF
+    	最高等级的，用于关闭所有日志记录。
+
+只会输出当前级别或比当前级别高的日志。
+log4j 默认的优先级为 ERROR。
+~~~
+
+
+
+
+
+### Appenders
+
+~~~txt
+允许把日志输出到不同的地方，如：
+	- 控制台（Console）
+	- 文件（Files）
+	
+可以根据天数 / 文件大小产生新的文件
+可以以流的形式发送到其它地方
+...
+
+常使用的类如下：
+    org.apache.log4j.ConsoleAppender（控制台）
+    org.apache.log4j.FileAppender（文件）
+    org.apache.log4j.DailyRollingFileAppender（每天产生一个日志文件）
+    org.apache.log4j.RollingFileAppender（文件大小到达指定尺寸时产生一个新的日志文件）
+    org.apache.log4j.WriterAppender（将日志信息以流格式发送到任意指定的地方）
+~~~
+
+~~~txt
+配置格式：
+log4j.appender.appenderName.操作1 = 值1	// appenderName:代表一个目的地，命名随意
+...
+log4j.appender.appenderName.操作N = 值N
+~~~
+
+
+
+
+
+### Layouts
+
+~~~txt
+Layouts 提供四种日志输出样式：
+	- HTML 样式
+	- 自由指定样式
+	- 包含日志级别与信息的样式
+	- 包含日志时间、线程、类别等信息的样式
+	
+常使用的类如下：
+    org.apache.log4j.HTMLLayout（以HTML表格形式布局）
+    org.apache.log4j.PatternLayout（可以灵活地指定布局模式）
+    org.apache.log4j.SimpleLayout（包含日志信息的级别和信息字符串）
+    org.apache.log4j.TTCCLayout（包含日志产生的时间、线程、类别等信息）
+
+---------------------------------
+样式举例：
+- HTMLLayout
+    <html>
+    ... 一个表格
+    </html>
+
+- PatternLayout
+    DEBUG 日志
+
+- SimpleLayout
+    DEBUG - bebug 日志
+
+- TTCCLayout
+    [main] DEBUG Log4jTest - bebug 日志
+~~~
+
+~~~txt
+配置格式：
+log4j.appender.appenderName.layout = 类名
+log4j.appender.appenderName.layout.操作1 = 值1
+...
+log4j.appender.appenderName.layout.操作N = 值N
+~~~
+
+
+
+
+
+### 示例
+
+> 配置
+>
+> ~~~properties
+> # 配置根 Logger：设置级别、目的地（可配置多个目的地，命名随意）
+> log4j.rootLogger = DEBUG, dest_01_console
+> 
+> # 设置目的地 console_01 指向控制台
+> log4j.appender.dest_01_console = org.apache.log4j.ConsoleAppender
+> 
+> # 设置目的地 console_01 的输出格式为
+> log4j.appender.dest_01_console.layout = org.apache.log4j.SimpleLayout
+> ~~~
+>
+> Test
+>
+> ~~~java
+> public class Log4jTest {
+> 
+>     private static Logger logger;
+>     static {
+>         logger = Logger.getLogger(Log4jTest.class);
+>     }
+> 
+>     @Test
+>     public void test() {
+>         logger.trace("TRACE 日志");
+>         logger.debug("DEBUG 日志");
+>         logger.info("INFO 日志");
+>         logger.warn("WARN 日志");
+>         logger.error("ERROR 日志");
+>         logger.fatal("FATAL 日志");
+>     }
+> 
+> }
+> ~~~
+>
+> 输出结果
+>
+> ~~~txt
+> TRACE - trace 日志
+> DEBUG - bebug 日志
+> INFO - info 日志
+> WARN - warn 日志
+> ERROR - error 日志
+> FATAL - fatal 日志
+> ~~~
+>
+> 
+
+
+
+### 示例二
+
+> 配置
+>
+> ~~~properties
+> log4j.rootLogger = DEBUG, dest_01_console
+> log4j.appender.dest_01_console = org.apache.log4j.ConsoleAppender
+> log4j.appender.dest_01_console.layout = org.apache.log4j.PatternLayout
+> log4j.appender.dest_01_console.layout.ConversionPattern =  %d{ABSOLUTE} %5p %c{1}:%L - %m%n
+> ~~~
+>
+> 输出结果
+>
+> ~~~txt
+> 15:32:53,514 TRACE Log4jTest:15 - trace 日志
+> 15:32:53,517 DEBUG Log4jTest:16 - bebug 日志
+> 15:32:53,517  INFO Log4jTest:17 - info 日志
+> 15:32:53,517  WARN Log4jTest:18 - warn 日志
+> 15:32:53,518 ERROR Log4jTest:19 - error 日志
+> 15:32:53,518 FATAL Log4jTest:20 - fatal 日志
+> ~~~
+>
+> 
+
+
+
+
+
+
+
+## 配置详解
+
+
+
+引用：
+[Java-优雅的记录日志](https://www.cnblogs.com/crazyacking/p/5456347.html#_label00)
+[Log4J日志整合及配置详解](https://www.cnblogs.com/wangzhuxing/p/7753420.html)
+
+
+
+
+
+### 1. 日志说明
+
+~~~txt
+在实际应用中，要使 Log4j 在系统中运行，必须事先设定配置文件。
+配置文件事实上也就是对 Logger、Appender 及 Layout 进行相应设定。
+
+Log4j 支持两种配置文件格式：
+	- XML
+	- properties
+~~~
+
+
+
+
+
+### 2. 配置步骤
+
+#### 2.1 配置根 Logger
+
+~~~txt
+log4j.rootLogger = [LEVEL] , appenderName1, appenderName2, ...（默认输出目的地，当前端传入类名）
+
+log4j.additivity.org.apache=false：表示Logger不会在父Logger的appender里输出，默认为true。
+
+[LEVEL]：设定日志记录的最低级别
+appenderName：就是指定日志信息要输出到哪里。可以同时指定多个输出目的地，用逗号隔开。
+例如：log4j.rootLogger ＝ INFO, A1, B2, C3
+~~~
+
+
+
+#### 2.2 配置输出目的地 Appender
+
+~~~txt
+log4j.appender.appenderName = className
+	- appenderName：自定义 appderName，在 log4j.rootLogger 设置中使用；
+	- className：可设值有以下五个：
+
+- ConsoleAppender 选项：
+    Threshold=WARN：指定日志信息的最低输出级别，默认为DEBUG。
+    ImmediateFlush=true：表示所有消息都会被立即输出，设为false则不输出，默认值是true。
+    Target=System.err：默认值是System.out。
+
+- FileAppender 选项：
+    Threshold=WARN：指定日志信息的最低输出级别，默认为 DEBUG。
+    ImmediateFlush=true：表示所有消息都会被立即输出，设为 false 则不输出，默认值是 true。
+    Append=false：true 表示消息增加到指定文件中，false 则将消息覆盖指定的文件内容，默认值是 true。
+    File=D:/logs/logging.log4j：指定消息输出到 logging.log4j 文件中。
+
+- DailyRollingFileAppender 选项：
+    Threshold=WARN：指定日志信息的最低输出级别，默认为 DEBUG。
+    ImmediateFlush=true：表示所有消息都会被立即输出，设为false则不输出，默认值是true。
+    Append=false：true表示消息增加到指定文件中，false则将消息覆盖指定的文件内容，默认值是true。
+    File=D:/logs/logging.log4j：指定当前消息输出到logging.log4j文件中。
+    DatePattern='.'yyyy-MM：每月滚动一次日志文件，即每月产生一个新的日志文件。当前月的日志文件名为logging.log4j，前一个月的日志文件名为logging.log4j.yyyy-MM。
+    另外，也可以指定按周、天、时、分等来滚动日志文件，对应的格式如下：
+    1)'.'yyyy-MM：每月
+    2)'.'yyyy-ww：每周
+    3)'.'yyyy-MM-dd：每天
+    4)'.'yyyy-MM-dd-a：每天两次
+    5)'.'yyyy-MM-dd-HH：每小时
+    6)'.'yyyy-MM-dd-HH-mm：每分钟
+
+- RollingFileAppender 选项：
+    Threshold=WARN：指定日志信息的最低输出级别，默认为DEBUG。
+    ImmediateFlush=true：表示所有消息都会被立即输出，设为false则不输出，默认值是true。
+    Append=false：true表示消息增加到指定文件中，false则将消息覆盖指定的文件内容，默认值是true。
+    File=D:/logs/logging.log4j：指定消息输出到logging.log4j文件中。
+    MaxFileSize=100KB：后缀可以是KB, MB 或者GB。在日志文件到达该大小时，将会自动滚动，即将原来的内容移到logging.log4j.1文件中。
+    MaxBackupIndex=2：指定可以产生的滚动文件的最大数，例如，设为2则可以产生logging.log4j.1，logging.log4j.2两个滚动文件和一个logging.log4j文件。
+~~~
+
+
+
+#### 2.3 配置输出格式 Layout
+
+~~~txt
+log4j.appender.appenderName.layout = className
+
+className：可设值
+
+- HTMLLayout选项：
+    LocationInfo=true：输出java文件名称和行号，默认值是false。
+    Title=My Logging： 默认值是Log4J Log Messages。
+- PatternLayout选项：
+    ConversionPattern=%m%n：设定以怎样的格式显示消息。
+~~~
+
+
+
+
+
+### 日志输出格式
+
+上面示例二中，console 的输出内容是有一定格式的。关于配置格式：
+
+~~~properties
+log4j.appender.dest_01_console.layout.ConversionPattern =  %d{ABSOLUTE} %5p %c{1}:%L - %m%n
+~~~
+
+~~~txt
+%p: 输出日志信息优先级，即 DEBUG，INFO，WARN，ERROR，FATAL,
+%d: 输出日志时间点的日期或时间，默认格式为 ISO8601，也可以在其后指定格式，
+	比如：%d{yyy MMM dd HH:mm:ss,SSS}，输出类似：2002年10月18日 22：10：28，921
+%r: 输出自应用启动到输出该log信息耗费的毫秒数
+%c: 输出日志信息所属的类目，通常就是所在类的全名
+%t: 输出产生该日志事件的线程名
+%l: 输出日志事件的发生位置，相当于%C.%M(%F:%L)的组合，包括类目名、发生的线程，以及在代码中的行数。
+	比如：Testlog4.main(TestLog4.java:10)
+%x: 输出和当前线程相关联的 NDC(嵌套诊断环境)，尤其用到像 java servlets 这样的多客户多线程的应用中。
+%%: 输出一个 "%" 字符
+%F: 输出日志消息产生时所在的文件名称
+%L: 输出代码中的行号
+%m: 输出代码中指定的消息,产生的日志具体信息
+%n: 输出一个回车换行符，Windows 平台为 "\r\n"，Unix平台为 "\n" 输出日志信息换行
+
+可以在 % 与模式字符之间加上修饰符来控制其最小宽度、最大宽度、和文本的对齐方式。
+说明：
+"c" 指定输出category的名称
+"-" 号表示左对齐
+如：
+	- %20c
+		指定输出 category 的名称，最小的宽度是20；
+		如果 category 的名称小于20的话，默认的情况下右对齐。
+	- %-20c	
+		指定输出 category 的名称，最小的宽度是20；
+		如果 category 的名称小于20的话，"-" 号指定左对齐。
+	- %.30c
+		指定输出 category 的名称，最大的宽度是30；
+		如果 category 的名称大于30的话，就会将左边多出的字符截掉；
+		但小于30的话也不会有空格。
+	- %20.30c
+		如果 category 的名称小于20就补空格，并且右对齐；
+		如果其名称长于30，就从左边交远销出的字符截掉。
+~~~
+
+
+
+
+
+### 3. 小案例
+
+~~~properties
+### 设置级别和目的地(这里多个目的地) ###
+log4j.rootLogger = trace, CONSOLE, zhangsanLog
+### 这里的 me 是包，也就是在这个包记录日志时，是只记录debug及以上级别的日志
+log4j.logger.me = DEBUG
+
+### 输出到控制台 ###
+log4j.appender.CONSOLE = org.apache.log4j.ConsoleAppender
+log4j.appender.CONSOLE.Target = System.out
+log4j.appender.CONSOLE.layout = org.apache.log4j.PatternLayout
+log4j.appender.CONSOLE.layout.ConversionPattern =  %d{ABSOLUTE} %5p %c{1}:%L [%t:%r]- %m%n
+
+### 输出到日志文件 ###
+log4j.appender.zhangsanLog = org.apache.log4j.DailyRollingFileAppender
+log4j.appender.zhangsanLog.File =G\:\\var\\alldata\\zhenduan\\debug.log
+# log4j.appender.zhangsanLog.File =/var/alldata/zhenduan/debug.log
+log4j.appender.zhangsanLog.Append = true
+## 只输出DEBUG级别以上的日志
+log4j.appender.zhangsanLog.Threshold = DEBUG
+
+#'.'yyyy-MM-dd: 每天产生一个新的文件
+log4j.appender.zhangsanLog.DatePattern = '.'yyyy-MM-dd
+log4j.appender.zhangsanLog.layout = org.apache.log4j.PatternLayout
+log4j.appender.zhangsanLog.layout.ConversionPattern = %-d{yyyy-MM-dd HH:mm:ss} [%t:%r] - [%p] [%c{1}:%L] [%M] %m%n
+log4j.additivity.zhangsanLog = false
+~~~
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## 比较全面的日志配置
+
+Log4j配置文件实现了输出到控制台、文件、回滚文件、发送日志邮件、输出到数据库日志表、自定义标签等全套功能。
+
+~~~properties
+log4j.rootLogger=DEBUG,console,dailyFile,im
+log4j.additivity.org.apache=true
+~~~
+
+### 控制台（console）
+~~~properties
+log4j.appender.console=org.apache.log4j.ConsoleAppender
+log4j.appender.console.Threshold=DEBUG
+log4j.appender.console.ImmediateFlush=true
+log4j.appender.console.Target=System.err
+log4j.appender.console.layout=org.apache.log4j.PatternLayout
+log4j.appender.console.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+~~~
+
+### 日志文件（logFile）
+~~~properties
+log4j.appender.logFile=org.apache.log4j.FileAppender
+log4j.appender.logFile.Threshold=DEBUG
+log4j.appender.logFile.ImmediateFlush=true
+log4j.appender.logFile.Append=true
+log4j.appender.logFile.File=D:/logs/log.log4j
+log4j.appender.logFile.layout=org.apache.log4j.PatternLayout
+log4j.appender.logFile.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+~~~
+
+### 回滚文件（rollingFile）
+~~~properties
+log4j.appender.rollingFile=org.apache.log4j.RollingFileAppender
+log4j.appender.rollingFile.Threshold=DEBUG
+log4j.appender.rollingFile.ImmediateFlush=true
+log4j.appender.rollingFile.Append=true
+log4j.appender.rollingFile.File=D:/logs/log.log4j
+log4j.appender.rollingFile.MaxFileSize=200KB
+log4j.appender.rollingFile.MaxBackupIndex=50
+log4j.appender.rollingFile.layout=org.apache.log4j.PatternLayout
+log4j.appender.rollingFile.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+~~~
+
+### 定期回滚日志文件（dailyFile）
+~~~properties
+log4j.appender.dailyFile=org.apache.log4j.DailyRollingFileAppender
+log4j.appender.dailyFile.Threshold=DEBUG
+log4j.appender.dailyFile.ImmediateFlush=true
+log4j.appender.dailyFile.Append=true
+log4j.appender.dailyFile.File=D:/logs/log.log4j
+log4j.appender.dailyFile.DatePattern='.'yyyy-MM-dd
+log4j.appender.dailyFile.layout=org.apache.log4j.PatternLayout
+log4j.appender.dailyFile.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+~~~
+
+### 应用于 socket
+~~~properties
+log4j.appender.socket=org.apache.log4j.RollingFileAppender
+log4j.appender.socket.RemoteHost=localhost
+log4j.appender.socket.Port=5001
+log4j.appender.socket.LocationInfo=true
+# Set up for Log Factor 5
+log4j.appender.socket.layout=org.apache.log4j.PatternLayout
+log4j.appender.socket.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+# Log Factor 5 Appender
+log4j.appender.LF5_APPENDER=org.apache.log4j.lf5.LF5Appender
+log4j.appender.LF5_APPENDER.MaxNumberOfRecords=2000
+~~~
+
+###  发送日志到指定邮件
+~~~properties
+log4j.appender.mail=org.apache.log4j.net.SMTPAppender
+log4j.appender.mail.Threshold=FATAL
+log4j.appender.mail.BufferSize=10
+log4j.appender.mail.From = xxx@mail.com
+log4j.appender.mail.SMTPHost=mail.com
+log4j.appender.mail.Subject=Log4J Message
+log4j.appender.mail.To= xxx@mail.com
+log4j.appender.mail.layout=org.apache.log4j.PatternLayout
+log4j.appender.mail.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+~~~
+
+### 应用于数据库
+~~~properties
+log4j.appender.database=org.apache.log4j.jdbc.JDBCAppender
+log4j.appender.database.URL=jdbc:mysql://localhost:3306/test
+log4j.appender.database.driver=com.mysql.jdbc.Driver
+log4j.appender.database.user=root
+log4j.appender.database.password=
+log4j.appender.database.sql=INSERT INTO LOG4J (Message) VALUES('=[%-5p] %d(%r) --> [%t] %l: %m %x %n')
+log4j.appender.database.layout=org.apache.log4j.PatternLayout
+log4j.appender.database.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+~~~
+
+### 自定义 Appender
+~~~properties
+log4j.appender.im = net.cybercorlin.util.logger.appender.IMAppender
+log4j.appender.im.host = mail.cybercorlin.net
+log4j.appender.im.username = username
+log4j.appender.im.password = password
+log4j.appender.im.recipient = corlin@cybercorlin.net
+log4j.appender.im.layout=org.apache.log4j.PatternLayout
+log4j.appender.im.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
+~~~
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
