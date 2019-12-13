@@ -9,8 +9,8 @@ import java.io.Serializable;
  */
 public class User implements Serializable {
 
-    private Integer uid;
-    private String uname;
+    private Integer uid; // uId
+    private String uname; //uName
 
     @Override
     public String toString() {
@@ -18,9 +18,6 @@ public class User implements Serializable {
                 "uid=" + uid +
                 ", uname='" + uname + '\'' +
                 '}';
-    }
-
-    public User() {
     }
 
     public Integer getUid() {
@@ -37,6 +34,9 @@ public class User implements Serializable {
 
     public void setUname(String uname) {
         this.uname = uname;
+    }
+
+    public User() {
     }
 
     public User(Integer uid, String uname) {

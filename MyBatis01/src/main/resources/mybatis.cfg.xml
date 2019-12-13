@@ -3,6 +3,17 @@
 <configuration>
 
     <properties resource="db.properties"/>
+    
+    <settings>
+        <setting name="mapUnderscoreToCamelCase" value="true"/>
+    </settings>
+    
+    
+    <typeAliases>
+        <!--<typeAlias type="com.dfbz.domain.User" alias="user"/>-->
+        <package name="com.dfbz.domain"/>
+    </typeAliases>
+    
 
     <environments default="ev-mysql">
         <environment id="ev-mysql">
@@ -22,8 +33,9 @@
 
 
     <mappers>
-        <!--<mapper resource="com/dfbz/mapper/UserMapper.xml"/>-->
-        <mapper class="com.dfbz.mapper.UserMapper"/>
+        <mapper resource="com/dfbz/mapper/UserMapper.xml"/>
+        <!--<mapper resource="com/dfbz/mapper/DeptMapper.xml"/>-->
+        <!--<mapper class="com.dfbz.mapper.UserMapper"/>-->
     </mappers>
 
 </configuration>

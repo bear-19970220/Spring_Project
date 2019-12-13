@@ -9,6 +9,9 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.util.List;
 
 /**
@@ -26,22 +29,31 @@ public class DemoTest {
 //        SqlSession sqlSession = factory.openSession();
 
         SqlSession sqlSession = MyBatisUtils.createSqlSession();
-        System.out.println(sqlSession);
+//        System.out.println(sqlSession);
 
         /**
          * 古老的方式：iBatis 遗留
          */
 //        List<User> findAllUser = sqlSession.selectList("findAllUser");
-//        findAllUser.forEach(user-> System.out.println(user));
+//        findAllUser.forEach(user -> System.out.println(user));
         /**
          * 面向接口，更好
          */
+//        UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+//        userMapper.findAllUser().forEach(user-> System.out.println(user));
+
+
+        // 增
+//        User user = new User(3, "小白狼");
+//        sqlSession.insert("addUser", user);
+
+
+        // 多参数
         UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
-        userMapper.findAllUser().forEach(user-> System.out.println(user));
+        User user = userMapper.findUserByIdAndName(1, "极光之域");
+//        User user = userMapper.findUserById(2);
+        System.out.println(user);
 
-
-        User user = new User(3, "小白狼");
-        sqlSession.insert("addUser", user);
 
         sqlSession.commit();
         sqlSession.close();
