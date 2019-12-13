@@ -1434,10 +1434,295 @@ public class DemoTest {
 
 
 
-# MyBatis
+# **MyBatis**
 
 ---
 
+## 快速入门：**XML **
+
+### 1. 环境搭建
+
+> 导入依赖
+>
+> ~~~xml
+> <!-- MyBatis -->
+> <dependency>
+>     <groupId>org.mybatis</groupId>
+>     <artifactId>mybatis</artifactId>
+>     <version>3.5.3</version>
+> </dependency>
+> 
+> <!-- 数据库连接驱动 -->
+> <dependency>
+>     <groupId>mysql</groupId>
+>     <artifactId>mysql-connector-java</artifactId>
+>     <version>5.1.47</version>
+> </dependency>
+> ~~~
+>
+> 
+>
+> 
+>
+> 核心配置文件 MyBatis.cfg.xml
+>
+> > - 事务
+> > - 数据源
+>
+> ~~~xml
+> <?xml version="1.0" encoding="UTF-8"?>
+> <!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "mybatis-3-config.dtd" >
+> <configuration>
+> 
+>     <!-- 设置默认环境：可以配置多个环境，一个环境对应一个数据库 -->
+>     <environments default="ev-mysql">
+>         <environment id="ev-mysql">
+>             <!--
+> 				1️⃣
+> 				JDBC：使用 JDBC 的事务提交回滚（JdbcTransactionFactory）
+> 				MANAGED：不需要事务，自己弄事务（ManagedTransactionFactory）
+> 				（所有配置可在 Configuration 类的源码中查看）
+> 			-->
+>             <transactionManager type="JDBC"></transactionManager>
+>             
+>             <!--
+> 				2️⃣
+> 				POOLED：使用数据库连接池，Mybatis内置默认有一个简单的内置连接池
+> 				UNPOOLED：不使用数据库连接，直接使用数据库JDBC直连
+> 			-->
+>             <dataSource type="POOLED">
+>                 <property name="driver" value="com.mysql.jdbc.Driver"/>
+>                 <property name="url" value="jdbc:mysql:///db_mybatis"/>
+>                 <property name="username" value="root"/>
+>                 <property name="password" value="123456"/>
+>             </dataSource>
+>             
+>         </environment>
+>     </environments>
+> 
+> </configuration>
+> ~~~
+>
+> 
+
+### 2. 创建 SqlSession
+
+~~~java
+@Test
+public void test() throws IOException {
+    
+    // 1.加载配置文件
+    InputStream ins = Resources.getResourceAsStream("mybatis.cfg.xml");
+    
+    // 2.利用配置文件创建 SqlSession
+    SqlSessionFactoryBuilder factoryBuilder = new SqlSessionFactoryBuilder();
+    SqlSessionFactory factory = factoryBuilder.build(ins);
+    SqlSession sqlSession = factory.openSession();
+    
+    // 3.打印测试
+    System.out.println(sqlSession);
+}
+~~~
+
+
+
+
+
+### 3. 搭建数据库
+
+~~~sql
+CREATE TABLE `t_user` (
+    `uid` int(11) NOT NULL,
+    `uname` varchar(50) DEFAULT NULL,
+    PRIMARY KEY (`uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+INSERT INTO `t_user`(`uid`, `uname`) VALUES (1, '极光之域');
+INSERT INTO `t_user`(`uid`, `uname`) VALUES (2, '天刀');
+~~~
+
+
+
+
+### 4. 创建实体类
+
+~~~java
+public class User{
+
+    private Integer uid;
+    private String uname;
+
+    // ... 构造方法、Getter、Setter、toString
+}
+~~~
+
+
+
+
+
+### 5. 创建 dao 接口
+
+~~~java
+public interface UserMapper {
+
+    List<User> findAllUser();
+
+    void addUser(User user);
+
+}
+~~~
+
+
+
+
+
+### 6. 创建映射文件
+
+~~~xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
+<!-- namespace 为 dao 接口的全限定类名 -->
+<mapper namespace="com.dfbz.mapper.UserMapper">
+
+    <select id="findAllUser" resultType="com.dfbz.domain.User">
+        SELECT uid, uname FROM t_user
+    </select>
+
+    <!-- #{属性名} 获取实体类的属性值 -->
+    <insert id="addUser" parameterType="com.dfbz.domain.User">
+        INSERT INTO t_user(uid, uname) VALUES (#{uid}, #{uname});
+    </insert>
+
+</mapper>
+~~~
+
+
+
+
+
+### 7. 加载映射文件
+
+```xml
+<mappers>
+    <mapper resource="com/dfbz/mapper/UserMapper.xml"/>
+</mappers>
+```
+
+
+
+
+
+### 8. Test
+
+~~~java
+@Test
+public void test() throws IOException {
+
+    // 获取 SqlSession
+    SqlSessionFactoryBuilder factoryBuilder = new SqlSessionFactoryBuilder();
+    InputStream is = Resources.getResourceAsStream("mybatis.cfg.xml");
+    SqlSessionFactory factory = factoryBuilder.build(is);
+    SqlSession sqlSession = factory.openSession();
+
+    // findAllUser
+    // 1.SqlSession 直接 发送 SQL：古老的方式，由 iBatis 遗留
+    List<User> findAllUser = sqlSession.selectList("findAllUser");
+    findAllUser.forEach(user-> System.out.println(user));
+    // 2.由 Mapper 接口发送 SQL：面向接口编程可以消除 SqlSession 带来的功能性代码，提高可读性
+    UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+    userMapper.findAllUser().forEach(user-> System.out.println(user));
+
+    // addUser
+    User user = new User(3, "小白狼");
+    sqlSession.insert("addUser", user);
+
+    // 提交事务、释放资源
+    sqlSession.commit();
+    sqlSession.close();
+
+}
+~~~
+
+
+
+
+
+### 9. 工具类创建 SqlSession
+
+~~~java
+public class MyBatisUtils {
+
+    // 工厂只有一个
+    private static SqlSessionFactory factory;
+    static {
+        try {
+            Reader reader = Resources.getResourceAsReader("mybatis.cfg.xml");
+            SqlSessionFactoryBuilder factoryBuilder = new SqlSessionFactoryBuilder();
+            factory = factoryBuilder.build(reader);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // 派发 SqlSession
+    public static SqlSession createSqlSession() {
+        return factory.openSession();
+    }
+
+}
+~~~
+
+
+
+
+
+### 10. 线程安全化工具类
+
+~~~java
+
+~~~
+
+
+
+
+
+
+
+
+
+### 11. MyBatis 读取 Properties
+
+与 Spring 的读取方式基本一致
+
+- 注意：MyBatis 的各项配置顺序固定，不能颠倒
+
+~~~xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "mybatis-3-config.dtd" >
+<configuration>
+
+    <!-- 读取配置文件：注：无法识别 classpath -->
+    <properties resource="db.properties"/>
+
+    <environments default="ev-mysql">
+        <environment id="ev-mysql">            
+            <transactionManager type="JDBC"></transactionManager>
+            <!-- 获取配置数据 -->
+            <dataSource type="POOLED">
+                <property name="driver" value="${driverClassName}"/>
+                <property name="url" value="${url}"/>
+                <property name="username" value="${username}"/>
+                <property name="password" value="${password}"/>
+            </dataSource>
+        </environment>
+    </environments>
+
+    <mappers>
+        <mapper resource="com/dfbz/mapper/UserMapper.xml"/>
+    </mappers>
+
+</configuration>
+~~~
 
 
 
@@ -1449,26 +1734,70 @@ public class DemoTest {
 
 
 
+## **注解**
+
+- 环境搭建
+
+  > 1. 导入依赖：不需要导入新的依赖
+  >
+  > 2. 配置文件
+  >
+  >    ~~~xml
+  >    <?xml version="1.0" encoding="UTF-8"?>
+  >    <!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "mybatis-3-config.dtd" >
+  >    <configuration>
+  >    
+  >        <properties resource="db.properties"/>
+  >    
+  >        <environments default="ev-mysql">
+  >            <environment id="ev-mysql">
+  >                <transactionManager type="JDBC"></transactionManager>
+  >                <dataSource type="POOLED"><!-- ... --></dataSource>
+  >            </environment>
+  >        </environments>
+  >    
+  >        <!-- 
+  >    		加载使用了注解的接口
+  >    		注：
+  >    			原 XML Mapper 配置文件需要将原有的 <select> <insert> 等映射配置注释
+  >    			否则报错：Mapped Statements collection already contains value
+  >    
+  >    			不能注释全部（Error creating document instance：文件提前结束）
+  >    			就算 MyBatis 主配置文件不引用也不行。
+  >    			删掉可以，
+  >    			一劳永逸。
+  >     	-->
+  >        <mappers>
+  >            <mapper class="com.dfbz.mapper.UserMapper"/>
+  >        </mappers>
+  >    
+  >    </configuration>
+  >    ~~~
+  >
+  >    
+  >
 
 
 
+- 在 Mapper 类上配置注解
 
+  ~~~txt
+  @Select、@Insert、@Update、@Delete
+  ~~~
 
+  ~~~java
+  public interface UserMapper {
+  
+      @Select("SELECT uid, uname FROM t_user")
+      List<User> findAllUser();
+  
+      @Insert("INSERT INTO t_user(uid, uname) VALUES (#{uid}, #{uname})")
+      void addUser(User user);
+  
+  }
+  ~~~
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  
 
 
 
