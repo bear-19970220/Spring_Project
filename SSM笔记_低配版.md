@@ -1576,7 +1576,7 @@ public interface UserMapper {
 
 
 
-### 6. 创建映射文件
+### 6. 创建映射文件 Mapper
 
 ~~~xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -1584,12 +1584,20 @@ public interface UserMapper {
 <!-- namespace 为 dao 接口的全限定类名 -->
 <mapper namespace="com.dfbz.mapper.UserMapper">
 
+    <!-- 返回值类型：查询结果集中每一行记录对应的类型 -->
     <select id="findAllUser" resultType="com.dfbz.domain.User">
         SELECT uid, uname FROM t_user
     </select>
-
-    <!-- #{属性名} 获取实体类的属性值 -->
-    <insert id="addUser" parameterType="com.dfbz.domain.User">
+    
+    <!-- <insert id="addUser" parameterType="com.dfbz.domain.User"> -->
+    <!-- 
+		insert、delete、update 的参数类型 parameterType 可以不指定，MyBatis 会自动识别
+		(专业回答：parameterType 主要用于指定传入对象类型，如果不指定，会直接获取，接口参数，指定则是获取对象类的属性)
+		如：pstmt.setObject(..); ？
+		但是查询的返回值类型 resultType 必须指定，因为 MyBatis 需要按类型封装结果
+ 	-->
+    <insert id="addUser">
+        <!-- #{属性名} 获取实体类的属性值 -->
         INSERT INTO t_user(uid, uname) VALUES (#{uid}, #{uname});
     </insert>
 
@@ -1626,6 +1634,7 @@ public void test() throws IOException {
 
     // findAllUser
     // 1.SqlSession 直接 发送 SQL：古老的方式，由 iBatis 遗留
+    // 标准写法：sqlSession.selectList("命名空间.findAllUser");（详见：dao 实现类版）
     List<User> findAllUser = sqlSession.selectList("findAllUser");
     findAllUser.forEach(user-> System.out.println(user));
     // 2.由 Mapper 接口发送 SQL：面向接口编程可以消除 SqlSession 带来的功能性代码，提高可读性
@@ -1762,7 +1771,7 @@ public class MyBatisUtils {
   >    			原 XML Mapper 配置文件需要将原有的 <select> <insert> 等映射配置注释
   >    			否则报错：Mapped Statements collection already contains value
   >    
-  >    			不能注释全部（Error creating document instance：文件提前结束）
+  >    			不能注释全部，否则报错：Error creating document instance：文件提前结束
   >    			就算 MyBatis 主配置文件不引用也不行。
   >    			删掉可以，
   >    			一劳永逸。
@@ -1798,6 +1807,272 @@ public class MyBatisUtils {
   ~~~
 
   
+
+- Test
+
+  ~~~java
+  @Test
+  public void test() throws IOException {
+  
+      SqlSession sqlSession = MyBatisUtils.createSqlSession();
+  
+      UserMapper userMapper = sqlSession.getMapper(UserMapper.class);
+  
+      // ... 操作一致
+  
+      sqlSession.commit();
+      sqlSession.close();
+  
+  }
+  ~~~
+
+  
+
+
+
+
+
+## 总配置文件说明（按序）
+
+### < properties > Properties 文件
+
+### < settings > 修改默认**设置**
+
+#### 下划线 → 驼峰命名
+
+| 数据库字段 |  实体类属性   |
+| :--------: | :-----------: |
+|    u_id    |   uid / uId   |
+|   uname    | uname / uName |
+
+> MyBatis.cfg.xml
+>
+> ~~~xml
+> <settings>
+>  <setting name="mapUnderscoreToCamelCase" value=""/>
+> </settings>
+> ~~~
+>
+
+
+
+#### 所有可配置选项
+
+| 设置参数                  | 描述                                                         |                  有效值                  |
+| :------------------------ | :----------------------------------------------------------- | :--------------------------------------: |
+| cacheEnabled              | 使全局的映射器启用 / 禁用缓存                                |            **true** \| false             |
+| lazyLoadingEnabled        | 全局启用 / 禁用延迟加载（禁用时，所有关联对象都会即时加载）  |            **true** \| false             |
+| aggressiveLazyLoading     | 启用时，有延迟加载属性的对象在被调用时将会完全加载任意属性。否则，每种属性将会按需要加载 |            **true** \| false             |
+| multipleResultSetsEnabled | 允许或不允许多种结果集从一个单独的语句中返回（需要合适的驱动） |            **true **\| false             |
+| useColumnLabel            | 使用列标签代替列名。不同的驱动表现不同。参考驱动文档或充分测试两种方法来决定所使用的驱动 |            **true** \| false             |
+| useGeneratedKeys          | 允许 JDBC 支持生成的键。需要合适的驱动。如果为 true 则强制生成的键被使用，尽管一些驱动拒绝兼容但仍然有效（如：Derby） |            **true** \| false             |
+| autoMappingBehavior       | 指定 MyBatis 如何自动映射列到字段 / 属性。PARTICAL 只会自动映射简单、没有嵌套的结果。FULL 会自动映射任意复杂的结果（嵌套的或其他情况） |       NONE \| **PARTICAL** \| FULL       |
+| defaultExecutorType       | 配置默认的执行器。SIMPLE 执行器没有什么特别之处。REUSE 执行器重用预处理语句。BATCH 执行器重用语句和批量更新 |       **SIMPLE** \| REUSE \| BATCH       |
+| defaultStatementTimout    | 设置超时时间，他决定驱动等待一个数据库响应的时间             | Any \| positive \| integer \| **(null)** |
+
+
+
+
+
+
+
+### < typeAliases > **别名**
+
+1. 自定义别名
+
+   > MyBatis.cfg.xml
+   >
+   > ~~~xml
+   > <typeAliases>
+   >     <typeAlias type="com.dfbz.domain.User" alias="user"/>
+   > </typeAliases>
+   > ~~~
+   >
+   > UserMapper.xml
+   >
+   > ~~~xml
+   > <!-- resultType、parameterType 不再需要使用全限定类名 -->
+   > <select id="findAllUser" resultType="user">
+   >     SELECT uid, uname FROM t_user
+   > </select>
+   > ~~~
+   >
+   > 
+
+2. 使用 "去掉包名" 的方式（自动匹配大小写）
+
+   > MyBatis.cfg.xml
+   >
+   > ~~~xml
+   > <typeAliases>
+   >     <package name="com.dfbz.domain"/>
+   > </typeAliases>
+   > ~~~
+   >
+   > UserMapper.xml
+   >
+   > ~~~xml
+   > <select id="findAllUser" resultType="user">
+   >     SELECT uid, uname FROM t_user
+   > </select>
+   > ~~~
+   >
+   > 
+
+
+
+### < typeHandlers > 自定义类型处理器
+
+### objectFactory
+
+### objectWrapperFactory
+
+### < reflectorFactory >
+
+### < plugins >
+
+### < environments > 环境集
+
+### < databaseIdProvider >
+
+### < mappers > 映射文件集
+
+
+
+
+
+
+
+
+
+
+
+## mapping 映射文件说明
+
+
+
+### 传入参数
+
+- 说明
+
+  ~~~txt
+  MyBatis 映射接口操作的方法只能默认支持一个参数
+  （与 JDK7 之前不能通过反射获取参数名有关，类型相同就无法区分参数）
+  
+  MyBatis 是通过方法参数的类型来获取参数的。
+  又因为参数只能有一个。
+  所以不用再 mapper 中指定参数的类型，而取的时候也是随便取 #{xxx}
+  ~~~
+
+  > 如：
+  > Mapper 接口
+  >
+  > ~~~java
+  > public interface UserMapper {
+  >     User findUserById(Integer uid);
+  > }
+  > ~~~
+  >
+  > ~~~xml
+  > <select id="findUserById" resultType="User">
+  >     SELECT * FROM t_user WHERE u_id = #{uuuuuId}
+  > </select>
+  > ~~~
+  >
+  > 
+  >
+  > 
+  >
+  > 
+  >
+  > **注意**：
+  > 传入一个实体类，然后通过 #{属性名} 的方式获取实体类中的**属性值**
+  >
+  > ~~~xml
+  > <!-- 此时，属性名必须相同！ -->
+  > <insert id="addUser">
+  >     INSERT INTO t_user(uid, uname) VALUES (#{uid}, #{uname});
+  > </insert>
+  > ~~~
+  >
+  > 传入
+
+
+
+
+
+！！！！！！！！！！！！！！！！！！！！！！
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+- 如何支持多参数？—— MyBatis 参数池
+
+  ~~~java
+  public interface UserMapper {
+      User findUserByIdAndName(
+          @Param("uuu_id") Integer uid, 
+          @Param("uuu_name") String uname);
+  }
+  ~~~
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -2023,7 +2298,7 @@ log4j.appender.appenderName.layout.操作N = 值N
 
 
 
-### 1. 日志说明
+### 日志说明
 
 ~~~txt
 在实际应用中，要使 Log4j 在系统中运行，必须事先设定配置文件。
@@ -2038,9 +2313,9 @@ Log4j 支持两种配置文件格式：
 
 
 
-### 2. 配置步骤
+### 配置步骤
 
-#### 2.1 配置根 Logger
+#### 1. 配置根 Logger
 
 ~~~txt
 log4j.rootLogger = [LEVEL] , appenderName1, appenderName2, ...（默认输出目的地，当前端传入类名）
@@ -2054,7 +2329,7 @@ appenderName：就是指定日志信息要输出到哪里。可以同时指定�
 
 
 
-#### 2.2 配置输出目的地 Appender
+#### 2. 配置输出目的地 Appender
 
 ~~~txt
 log4j.appender.appenderName = className
@@ -2097,7 +2372,7 @@ log4j.appender.appenderName = className
 
 
 
-#### 2.3 配置输出格式 Layout
+#### 3. 配置输出格式 Layout
 
 ~~~txt
 log4j.appender.appenderName.layout = className
@@ -2163,7 +2438,7 @@ log4j.appender.dest_01_console.layout.ConversionPattern =  %d{ABSOLUTE} %5p %c{1
 
 
 
-### 3. 小案例
+### 小案例
 
 ~~~properties
 ### 设置级别和目的地(这里多个目的地) ###
