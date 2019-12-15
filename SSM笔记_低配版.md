@@ -1,4 +1,4 @@
-# Maven
+# **Maven**
 
 ---
 
@@ -34,7 +34,7 @@
 
 ### IDEA 配置 Maven
 
-以 web 工程为例
+**以 web 工程为例**
 
 1. 新建一个工程（ New Project ）
 
@@ -190,6 +190,40 @@ Maven 项目一经运行，会打包生成一个 target 文件夹。
 
 所以，classes（类路径）同样是在项目下一级，
 ~~~
+
+
+
+
+
+## IDEA 重建仓库索引
+
+> 1. 找到这个路径
+>
+>    ~~~txt
+>    C:\Users\acer\.IntelliJIdea2019.1\system\Maven\Indices
+>    ~~~
+>
+>    里面有若干文件夹（一般为两个）
+>
+>    ~~~txt
+>    如：
+>    - Index0
+>    - Index1
+>    ~~~
+>
+> 2. 打开里面的 index.properties
+>
+>    ~~~txt
+>    注：每个 Index 文件夹都有 index.properties，找到配置着自己的 Maven 仓库的那个。
+>    ~~~
+>
+> 3. 删了它
+>
+> 4. 重启 IDEA
+
+
+
+
 
 
 
@@ -1832,7 +1866,7 @@ public class MyBatisUtils {
 
 
 
-## 总配置文件说明（按序）
+## **总配置文件**说明（按序）
 
 ### < properties > Properties 文件
 
@@ -1849,7 +1883,7 @@ public class MyBatisUtils {
 >
 > ~~~xml
 > <settings>
->  <setting name="mapUnderscoreToCamelCase" value=""/>
+>      <setting name="mapUnderscoreToCamelCase" value=""/>
 > </settings>
 > ~~~
 >
@@ -1884,7 +1918,7 @@ public class MyBatisUtils {
    >
    > ~~~xml
    > <typeAliases>
-   >     <typeAlias type="com.dfbz.domain.User" alias="user"/>
+   >        <typeAlias type="com.dfbz.domain.User" alias="user"/>
    > </typeAliases>
    > ~~~
    >
@@ -1893,7 +1927,7 @@ public class MyBatisUtils {
    > ~~~xml
    > <!-- resultType、parameterType 不再需要使用全限定类名 -->
    > <select id="findAllUser" resultType="user">
-   >     SELECT uid, uname FROM t_user
+   >        SELECT uid, uname FROM t_user
    > </select>
    > ~~~
    >
@@ -1905,7 +1939,7 @@ public class MyBatisUtils {
    >
    > ~~~xml
    > <typeAliases>
-   >     <package name="com.dfbz.domain"/>
+   >        <package name="com.dfbz.domain"/>
    > </typeAliases>
    > ~~~
    >
@@ -1913,7 +1947,7 @@ public class MyBatisUtils {
    >
    > ~~~xml
    > <select id="findAllUser" resultType="user">
-   >     SELECT uid, uname FROM t_user
+   >        SELECT uid, uname FROM t_user
    > </select>
    > ~~~
    >
@@ -1947,7 +1981,7 @@ public class MyBatisUtils {
 
 
 
-## mapping 映射文件说明
+## **mapping** 映射文件说明
 
 
 
@@ -1969,39 +2003,122 @@ public class MyBatisUtils {
   >
   > ~~~java
   > public interface UserMapper {
-  >     User findUserById(Integer uid);
+  >        User findUserById(Integer uid);
   > }
   > ~~~
   >
   > ~~~xml
-  > <select id="findUserById" resultType="User">
-  >     SELECT * FROM t_user WHERE u_id = #{uuuuuId}
+  > <select id="findUserById" resultType="com.dfbz.domain.User">
+  >        SELECT * FROM t_user WHERE u_id = #{uuuuuId}
   > </select>
   > ~~~
   >
   > 
   >
-  > 
-  >
-  > 
-  >
   > **注意**：
-  > 传入一个实体类，然后通过 #{属性名} 的方式获取实体类中的**属性值**
-  >
-  > ~~~xml
-  > <!-- 此时，属性名必须相同！ -->
+  >传入一个实体类，然后通过 #{属性名} 的方式获取实体类中的**属性值**
+  > 
+  >~~~xml
+  > <!-- 此时，属性名必须取自实体类属性！ -->
   > <insert id="addUser">
-  >     INSERT INTO t_user(uid, uname) VALUES (#{uid}, #{uname});
+  >    INSERT INTO t_user(uid, uname) VALUES (#{uid}, #{uname});
   > </insert>
   > ~~~
+  > 
+  >    
+  
+  
+
+- 如何支持多参数？—— MyBatis 参数池（如：分页查询、组合条件查询 ...）
+
+  > 参数池：
   >
-  > 传入
+  > ~~~txt
+  > MyBatis 通过参数池支持多参数。
+  > 使用 @Param(value="参数名") 注解将参数放到参数池，参数名随意。
+  > ~~~
+  >
+  > 如：
+  >
+  > ~~~java
+  > public interface UserMapper {
+  >     User findUserByIdAndName(
+  >         @Param("uid") Integer uid, 
+  >         @Param("uname") String uname
+  >     );
+  > }
+  > ~~~
+  >
+  > ~~~xml
+  > <select id="findUserByIdAndName" resultType="com.dfbz.domain.User">
+  >     select * from t_user where u_id = #{uid} and u_name = #{uname}
+  > </select>
+  > ~~~
+  >
+  > 
 
 
 
 
 
-！！！！！！！！！！！！！！！！！！！！！！
+### ${ } 与 #{ } 的区别
+
+> 1. Statement 和 PreparedStatement
+>
+>    ~~~txt
+>    #{} 基于 PreparedStatement，变量的引入依赖 ?，而 ? 不能作为表名，所以 #{} 无法操作表名；
+>    ${} 基于 Statement，通过字符串拼接的方式引入变量，可以操作表名。
+>    ~~~
+>
+> 2. 获取参数的方式
+>
+>    ~~~txt
+>    #{} 可以直接获取方法的参数值（按类型），也可以获取参数池的值；
+>    ${} 只能获取参数池的值。
+>    ~~~
+>
+> 3. 安全问题
+>
+>    ~~~txt
+>    由于 #{} 基于 PreparedStatement，所以没有 SQL 注入的隐患，更安全。
+>    ~~~
+>
+>    
+
+- 总结：无需操作表名时，不要使用 ${ }。
+
+
+
+
+
+
+
+### 手动配置属性映射
+
+~~~txt
+属性介绍：
+- property：实体类属性
+- column：数据库表字段
+
+其他属性（无需配置）：
+- javaType：java 实体类属性的类型
+- jdbcType：数据库字段的类型
+- typeHandler：MyBatis 使用哪个类型解析器来解析
+~~~
+
+~~~xml
+<resultMap id="userResultMap" type="com.dfbz.domain.User">
+    <id property="uid" column="u_id"/>
+    <result property="uname" column="u_name"/>
+</resultMap>
+~~~
+
+~~~xml
+<!-- 将 resultType 换成 resultMap -->
+<select id="findAllUser" resultMap="userResultMap">
+    SELECT u_id, u_name FROM t_user
+</select>
+~~~
 
 
 
@@ -2011,45 +2128,241 @@ public class MyBatisUtils {
 
 
 
+## 动态 SQL
+
+### 作用
+
+~~~txt
+- 根据条件组装不同结构的 SQL 语句,可以提高 SQL 代码的重用性.
+
+- 满足某些特定需求，如：条件判断查询
+~~~
+
+
+
+### 标签介绍
+
+~~~txt
+<sql>、<include>
+	声明、调用公共 SQL 语句块。（尽量不用，不便于维护）
+<if>
+<foreach>
+	一般用于批量处理 SQL 语句
+<trim>
+	切割。主要用于切割关键字的头和尾的字符（新版 MyBatis 很少使用）
+<set>
+	就是 update 语句的 set 关键字，可自动忽略最后一个逗号。
+<where>
+<choose>、<when>、<otherwise>
+~~~
+
+
+
+### sql - include
+
+~~~xml
+<sql id="queryField">user_id, user_name</sql>
+
+<select id="findAllUser" resultMap="userResultMap">
+    SELECT <include refid="queryField"></include> FROM t_user
+</select>
+~~~
+
+
+
+### if
+
+> - set - if 实现 update 修改
+>
+>   ~~~java
+>   public interface UserMapper {
+>       void updateUser(User user);
+>   }
+>   ~~~
+>
+>   ~~~xml
+>   <update id="updateUser">
+>       UPDATE t_user
+>       <!-- set 会自动忽略最后一个逗号 -->
+>       <set>
+>           <if test="uid != null">
+>               u_id = #{uid},
+>           </if>
+>           <if test="uname != null">
+>               u_name = #{uname},
+>           </if>
+>       </set>
+>       WHERE u_id = #{uid}
+>   </update>
+>   ~~~
+>
+>   
+>
+> - if 实现模糊查询（推荐使用 **where** 标签）
+>
+>   ~~~java
+>   public interface UserMapper {
+>       void findUserByCondition(User user);
+>   }
+>   ~~~
+>
+>   ~~~xml
+>   <select id="findUserByCondition" resultMap="userResultMap">
+>       SELECT u_id, u_name FROM t_user WHERE 1=1
+>       <!-- 在标签内，属性不用 #{} -->
+>       <if test="uid != null">
+>           and u_id = #{uid}
+>       </if>
+>       <if test="uname != null">
+>           <!-- % 不能使用单引号，因为 #{} 解析后外侧是单引号。当然也可以使用数据库 concat 拼接 -->
+>           and u_name like "%"#{uname}"%"
+>       </if>
+>   </select>
+>   ~~~
+>
+>   
 
 
 
 
 
+ ### foreach
+
+> **批量添加**（MySQL 方言：values 后接多行数据）
+>
+> ~~~java
+> public interface UserMapper {
+>     void addUserBatch(User[] users);
+> }
+> ~~~
+>
+> ~~~xml
+> <!--
+> 	collection：
+>       - list：参数为集合
+>       - array：参数为数组
+> 	separator：连接遍历内容，会自动忽略最后一个字符
+> -->
+> <insert id="addUserBatch">
+>     INSERT INTO t_user(u_id, u_name) VALUES
+>     <foreach collection="list" item="user" separator=",">
+>         (#{user.uid}, #{user.uname})
+>     </foreach>
+> </insert>
+> ~~~
+>
+> 
+>
+> **批量删除**
+>
+> ~~~java
+> public interface UserMapper {
+>     void deleteUserBatch(Integer[] uids);
+> }
+> ~~~
+>
+> ~~~xml
+> <!--
+> 	open、close：循环前后添加
+> -->
+> <delete id="deleteUserBatch">
+>     DELETE FROM t_user WHERE u_id in
+>     <foreach collection="array" item="uid" open="(" close=")" separator=",">
+>         #{uid}
+>     </foreach>
+> </delete>
+> ~~~
+>
+> 
 
 
 
 
 
+### trim
 
+- 说明
 
-- 如何支持多参数？—— MyBatis 参数池
+  ~~~txt
+  prefix：在 <trim> 标签包括的 SQL 关键字前面增加字符
+  prefixOverrides：在 <trim> 标签包括的 SQL 关键字前面删除指定字符
+  suffix：在 <trim> 标签包括的 SQL 关键字的最后面增加字符
+  suffixOverrides:：在 <trim> 标签包括的 SQL 关键字最后面删除指定字符
+  
+  注：
+  	trim 起作用的是关键字
+  	（如：UPDATE ... SET ... WHERE ...
+  	<trim> 包括在 set 关键字,
+  	那么 prefix 就是 set 前面，suffix 就是 set 关键的最后面，where 的前面。
+  ~~~
 
-  ~~~java
-  public interface UserMapper {
-      User findUserByIdAndName(
-          @Param("uuu_id") Integer uid, 
-          @Param("uuu_name") String uname);
-  }
+- 实现 update 修改（推荐使用 **set** 标签）
+
+  ~~~xml
+  <update id="updateUser">
+      <trim suffixOverrides=",">
+          SET
+          <if test="uid != null">
+              u_id = #{uid},
+          </if>
+          <if test="uname != null">
+              u_name = #{uname},
+          </if>
+      </trim>
+      WHERE u_id = #{uid}
+  </update>
   ~~~
 
   
 
 
 
+### where
 
-
-
-
-
-
-
-
-
-
-
-
-
+> where - if
+>
+> ~~~xml
+> <select id="findUserByCondition" resultMap="userResultMap">
+>     SELECT u_id, u_name FROM t_user
+>     <where>
+>         <if test="uid != null">
+>             and u_id = #{uid}
+>         </if>
+>         <if test="uname != null">
+>             and u_name like "%"#{uname}"%"
+>         </if>
+>     </where>
+> </select>
+> ~~~
+>
+> 
+>
+> where - choose - when
+>
+> ~~~xml
+> <select id="findUserByCondition" resultMap="userResultMap">
+>     SELECT u_id, u_name FROM t_user
+>     <where>
+>         <choose>
+>             <when test="uid != null">
+>                 and u_id = #{uid}
+>             </when>
+>             <when test="uname != null">
+>                 and u_name like "%"#{uname}"%"
+>             </when>
+>             <!--
+>             <otherwise>
+>             	1 = 1
+>             </otherwise>
+> 			-->
+>         </choose>
+>     </where>
+> </select>
+> ~~~
+>
+> 
+>
+> 
 
 
 
