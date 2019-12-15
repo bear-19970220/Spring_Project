@@ -54,9 +54,6 @@
                     and u_name like "%"#{uname}"%"
                     <!--            and u_name like '%'#{uname}'%'-->
                 </when>
-                <otherwise>
-                    1 = 1
-                </otherwise>
             </choose>
         </where>
     </select>

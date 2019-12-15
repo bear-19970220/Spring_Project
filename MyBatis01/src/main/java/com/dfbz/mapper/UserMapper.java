@@ -16,10 +16,21 @@ public interface UserMapper {
     void addUser(User user);
 
     User findUserByIdAndName(
-            @Param("uuu_id") Integer uid,
-            @Param("uuu_name") String uname);
+            @Param("uuuu_id") Integer uid,
+            @Param("uuuu_name") String uname
+    );
 
     User findUserById(Integer uiiiiiiiiid);
 
+
+
+//    void addSomeUser(List<User> users);
+    void addSomeUser(User[] users);
+
+    void deleteUserBatch(Integer[] uids);
+
+    List<User> findUserByCondition(User user);
+
+    void updateUser(User user);
 
 }
