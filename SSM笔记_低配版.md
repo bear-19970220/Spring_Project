@@ -2128,7 +2128,7 @@ public class MyBatisUtils {
 
 
 
-## 动态 SQL
+## **动态 SQL**
 
 ### 作用
 
@@ -2232,7 +2232,7 @@ public class MyBatisUtils {
 >
 > ~~~java
 > public interface UserMapper {
->     void addUserBatch(User[] users);
+>        void addUserBatch(User[] users);
 > }
 > ~~~
 >
@@ -2377,6 +2377,32 @@ public class MyBatisUtils {
 
 
 
+
+
+
+
+
+
+
+## **高级查询**（多表）
+
+### 概念
+
+~~~txt
+高级查询：即多表连接查询，并将查询结果绑定到指定对象中。
+
+表与表的关系：一对一、一对多、多对一、多对多
+
+MyBatis 相关标签：
+	<association>：一方
+	<collection>：多方
+~~~
+
+
+
+
+
+### 1. 根据数据库的关系创建实体类
 
 
 
