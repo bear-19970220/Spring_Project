@@ -1468,6 +1468,106 @@ public class DemoTest {
 
 
 
+
+
+
+
+
+
+
+
+# **SpringMVC**
+
+## 快速入门：XML
+
+### 1. 环境搭建
+
+> 1. 创建一个 Maven 普通项目
+>
+> 2. 利用 IDEA 插件将项目自动转换为 Web 项目（如需手动可查阅 **Maven** 相关设置）
+>
+>    ~~~txt
+>    插件：JBLJavaToWeb
+>    
+>    功能：
+>    	- 自动为项目创建 Web 项目的目录结构（含 webapp、WEB-INF、web.xml）
+>    	- 自动将项目打包为 war 和 war exploded（在 pom.xml 文件中可查看）
+>    ~~~
+>
+> 3. 添加服务器，将打包好的项目部署到服务器中。
+>
+>    ---
+>
+> 4. 导入依赖：spring-webmvc
+>
+>    ~~~xml
+>    <dependency>
+>        <groupId>org.springframework</groupId>
+>        <artifactId>spring-webmvc</artifactId>
+>        <version>5.2.1.RELEASE</version>
+>    </dependency>
+>    ~~~
+>
+>    ~~~xml
+>    webmvc 的其他依赖：
+>    	- bean、core、context、expression
+>    	- aop
+>    	- web
+>    ~~~
+>
+> 5. 在 web.xml 中配置**核心控制器**（DispatcherServlet）
+>
+>    ~~~xml
+>    <!-- 本质就是个 Servlet，由 Spring 封装好的。 -->
+>    <servlet>
+>        <servlet-name>dispatcherServlet</servlet-name>
+>        <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+>    </servlet>
+>    <servlet-mapping>
+>        <servlet-name>dispatcherServlet</servlet-name>
+>        <url-pattern>*.smvc</url-pattern>
+>    </servlet-mapping>
+>    <!-- 设置只有 .smvc 后缀的请求才能进入 SpringMVC -->
+>    ~~~
+>
+>    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # **MyBatis**
 
 ---
@@ -1481,16 +1581,16 @@ public class DemoTest {
 > ~~~xml
 > <!-- MyBatis -->
 > <dependency>
->     <groupId>org.mybatis</groupId>
->     <artifactId>mybatis</artifactId>
->     <version>3.5.3</version>
+>        <groupId>org.mybatis</groupId>
+>        <artifactId>mybatis</artifactId>
+>        <version>3.5.3</version>
 > </dependency>
 > 
 > <!-- 数据库连接驱动 -->
 > <dependency>
->     <groupId>mysql</groupId>
->     <artifactId>mysql-connector-java</artifactId>
->     <version>5.1.47</version>
+>        <groupId>mysql</groupId>
+>        <artifactId>mysql-connector-java</artifactId>
+>        <version>5.1.47</version>
 > </dependency>
 > ~~~
 >
@@ -1610,7 +1710,7 @@ public interface UserMapper {
 
 
 
-### 6. 创建映射文件 Mapper
+### 6. 创建映射文件 mapper
 
 ~~~xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -1642,7 +1742,9 @@ public interface UserMapper {
 
 
 
-### 7. 加载映射文件
+### 7. 加载 mapper
+
+在总配置文件的 < configuration > 中添加如下配置：
 
 ```xml
 <mappers>
@@ -1771,13 +1873,68 @@ public class MyBatisUtils {
 
 
 
+### 12. 日志输出
+
+- 配置
+
+  > 1. 导入依赖
+  >
+  >    ~~~xml
+  >    <dependency>
+  >        <groupId>log4j</groupId>
+  >        <artifactId>log4j</artifactId>
+  >        <version>1.2.17</version>
+  >    </dependency>
+  >    ~~~
+  >
+  > 2. 创建日志配置文件
+  >
+  >    ~~~properties
+  >    # -------- console 控制台输出 -----------
+  >    log4j.appender.DEST_CONSOLE = org.apache.log4j.ConsoleAppender
+  >    log4j.appender.DEST_CONSOLE.layout = org.apache.log4j.SimpleLayout
+  >    
+  >    # -------- 输出到文件：HTML 格式 ---------
+  >    #log4j.appender.DEST_FILE_HTML = org.apache.log4j.FileAppender
+  >    #log4j.appender.DEST_FILE_HTML.File = E\:\\IDEA_logs\\MyBatis_logs.html
+  >    #log4j.appender.DEST_FILE_HTML.layout = org.apache.log4j.HTMLLayout
+  >    
+  >    
+  >    # 默认设置，用于指定默认的记录的日志级别
+  >    # log4j.rootLogger = INFO, DEST_FILE_HTML, DEST_CONSOLE
+  >    log4j.rootLogger = INFO, DEST_CONSOLE
+  >    
+  >    # 输出 mybatis 的 sql 语句与参数 指定 mapper 接口所在的位置的输出级别即可
+  >    # log4j.logger.[mapper 接口所在的包名] = TRACE（局部设置）
+  >    log4j.logger.com.dfbz.mapper.UserMapper = TRACE
+  >    ~~~
+  >
+  >    
+
+- 使用
+
+  ~~~txt
+  MyBatis 的 CRUD 操作过程会以日志的方式输出，配置后，即可查看。
+  ~~~
+
+- 实现原理
+
+  ~~~txt
+  MyBatis 会自动扫描日志（按一定顺序），并内置了各种实现。
+  ~~~
+
+- 参考：
+  [MyBatis 源码解析之日志记录 - 开心的鱼a1 - 博客园](https://www.cnblogs.com/dw-haung/p/9942810.html)
 
 
 
 
 
 
-## **注解**
+
+
+
+## 快速入门：**注解**
 
 - 环境搭建
 
@@ -1861,6 +2018,8 @@ public class MyBatisUtils {
   ~~~
 
   
+
+
 
 
 
@@ -2368,6 +2527,11 @@ public class MyBatisUtils {
 
 
 
+### choose - when - otherwise
+
+~~~txt
+详情见 where。
+~~~
 
 
 
@@ -2384,14 +2548,21 @@ public class MyBatisUtils {
 
 
 
-## **高级查询**（多表）
+
+
+
+## **高级查询**（多表查询）
 
 ### 概念
 
 ~~~txt
 高级查询：即多表连接查询，并将查询结果绑定到指定对象中。
 
-表与表的关系：一对一、一对多、多对一、多对多
+表与表的关系：
+	一对一：一个用户对应一个身份证号码
+	一对多：一个部门有多个员工
+	多对一：多个员工同属一个部门
+	多对多：老师和学生（双向一对多，即多对多）
 
 MyBatis 相关标签：
 	<association>：一方
@@ -2402,8 +2573,234 @@ MyBatis 相关标签：
 
 
 
+
+
+### 数据库表结构及表数据
+
+- account 员工账号表
+
+  |  ac_id   | emp_id |
+  | :------: | :----: |
+  | 20191001 |  1001  |
+  | 20191002 |  1002  |
+  | 20191003 |  1003  |
+  | 20191004 |  1004  |
+  | 20191005 |  1005  |
+
+  
+
+- emp 员工表
+
+  | emp_id | emp_name | emp_dept_id |
+  | :----: | :------: | :---------: |
+  |  1001  |   张三   |      1      |
+  |  1002  |   李四   |      1      |
+  |  1003  |   王五   |      2      |
+  |  1004  |   赵六   |      1      |
+  |  1005  |   田七   |      2      |
+
+
+
+- dept 部门表
+
+  | dept_id | dept_name |
+  | :-----: | :-------: |
+  |    1    |    A部    |
+  |    2    |    B部    |
+  |    3    |    C部    |
+
+
+
+SQL
+
+~~~sql
+-- 员工账号表
+CREATE TABLE `emp_account` (
+  `ac_id` bigint(50) NOT NULL,
+  `emp_id` bigint(50) DEFAULT NULL,
+  PRIMARY KEY (`ac_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+INSERT INTO `db_mybatis`.`emp_account`(`ac_id`, `emp_id`) VALUES (20191001, 1001);
+INSERT INTO `db_mybatis`.`emp_account`(`ac_id`, `emp_id`) VALUES (20191002, 1002);
+INSERT INTO `db_mybatis`.`emp_account`(`ac_id`, `emp_id`) VALUES (20191003, 1003);
+INSERT INTO `db_mybatis`.`emp_account`(`ac_id`, `emp_id`) VALUES (20191004, 1004);
+INSERT INTO `db_mybatis`.`emp_account`(`ac_id`, `emp_id`) VALUES (20191005, 1005);
+
+-- 员工表
+CREATE TABLE `emp` (
+    `emp_id` bigint(50) DEFAULT NULL,
+    `emp_name` varchar(50) DEFAULT NULL,
+    `emp_dept_id` int(10) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+INSERT INTO `db_mybatis`.`emp`(`emp_id`, `emp_name`, `emp_dept_id`) VALUES (1001, '张三', 1);
+INSERT INTO `db_mybatis`.`emp`(`emp_id`, `emp_name`, `emp_dept_id`) VALUES (1002, '李四', 1);
+INSERT INTO `db_mybatis`.`emp`(`emp_id`, `emp_name`, `emp_dept_id`) VALUES (1003, '王五', 2);
+INSERT INTO `db_mybatis`.`emp`(`emp_id`, `emp_name`, `emp_dept_id`) VALUES (1004, '赵六', 1);
+INSERT INTO `db_mybatis`.`emp`(`emp_id`, `emp_name`, `emp_dept_id`) VALUES (1005, '田七', 2);
+
+-- 部门表
+CREATE TABLE `dept` (
+    `dept_id` int(10) NOT NULL,
+    `dept_name` varchar(50) DEFAULT NULL,
+    PRIMARY KEY (`dept_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+INSERT INTO `db_mybatis`.`dept`(`dept_id`, `dept_name`) VALUES (1, 'A部');
+INSERT INTO `db_mybatis`.`dept`(`dept_id`, `dept_name`) VALUES (2, 'B部');
+INSERT INTO `db_mybatis`.`dept`(`dept_id`, `dept_name`) VALUES (3, 'C部');
+~~~
+
+
+
+
+
+
+
 ### 1. 根据数据库的关系创建实体类
 
+> - 员工账户类
+>
+>   ~~~java
+>   public class Account {
+>       private Long acid;
+>       private Emp emp;
+>       // ...    
+>   }
+>   ~~~
+>
+> - 员工类
+>
+>   ~~~java
+>   public class Emp {
+>       private Long eid;
+>       private String ename;
+>       private Dept dept;
+>       // ...    
+>   }
+>   ~~~
+>
+> - 部门类
+>
+>   ~~~java
+>   public class Dept {
+>       private Integer did;
+>       private String dname;
+>       // ...
+>   }
+>   ~~~
+>
+>   
+
+
+
+### 2. 配置映射
+
+> - 一对一（account - emp），多对一同理（emp - dept）
+>
+>   ~~~xml
+>   <mapper namespace="com.dfbz.mapper.AccountMapper">
+>       
+>   	<!-- Emp 为自定义类型，因此必须使用 resultMap 进行映射 -->
+>       <resultMap id="rm_account" type="com.dfbz.domain.Account">
+>           <id property="acid" column="ac_id"/>
+>           <!-- 此处 javaType 可省略不写 -->
+>           <association property="emp">
+>               <id property="eid" column="emp_id"/>
+>               <result property="ename" column="emp_name"/>
+>           </association>        
+>           <!-- association 中可以引用其他 resultMap，如： 
+>   		<association property="emp" resultMap="com.dfbz.mapper.EmpMapper.rm_emp"/> 
+>   		-->
+>       </resultMap>
+>   	
+>       <select id="findEmpAndAccount" resultMap="rm_account">
+>           SELECT a.ac_id, e.emp_name
+>           FROM emp_account a
+>           LEFT OUTER JOIN emp e ON a.emp_id = e.emp_id
+>       </select>
+>       
+>   </mapper>
+>   ~~~
+>
+>   输出结果：
+>
+>   ~~~text
+>   Account{acid=20191001, emp=Emp{eid=null, ename='张三'}}
+>   Account{acid=20191002, emp=Emp{eid=null, ename='李四'}}
+>   Account{acid=20191003, emp=Emp{eid=null, ename='王五'}}
+>   Account{acid=20191004, emp=Emp{eid=null, ename='赵六'}}
+>   Account{acid=20191005, emp=Emp{eid=null, ename='田七'}}
+>   ~~~
+>
+>
+> 
+>
+> - 一对多（dept - emp）
+>
+>   ~~~xml
+>   <mapper namespace="com.dfbz.mapper.DeptMapper">
+>   
+>       <resultMap id="rm_dept_emp" type="com.dfbz.domain.Dept">
+>           <id property="did" column="dept_id"/>
+>           <result property="dname" column="dept_name"/>
+>           <!-- 此处的 ofType 一定要写 -->
+>           <collection property="emps" ofType="com.dfbz.domain.Emp">
+>               <id property="eid" column="emp_id"/>
+>               <result property="ename" column="emp_name"/>
+>           </collection>
+>       </resultMap>
+>   
+>       <select id="findDeptAndEmp" resultMap="rm_dept_emp">
+>           SELECT d.dept_name, e.emp_name
+>           FROM dept d
+>           LEFT OUTER JOIN emp e ON d.dept_id = e.emp_dept_id
+>       </select>
+>   
+>   </mapper>
+>   ~~~
+>
+>   输出结果（❌：可以看出，List 集合没有自动封装到一个集合中。）
+>   
+>   ~~~xml
+>   Dept{did=null, dname='A部', emps=[Emp{eid=null, ename='张三'}]}
+>   Dept{did=null, dname='A部', emps=[Emp{eid=null, ename='李四'}]}
+>   Dept{did=null, dname='B部', emps=[Emp{eid=null, ename='王五'}]}
+>   Dept{did=null, dname='A部', emps=[Emp{eid=null, ename='赵六'}]}
+>   Dept{did=null, dname='B部', emps=[Emp{eid=null, ename='田七'}]}
+>   Dept{did=null, dname='C部', emps=[]}
+>   ~~~
+>   
+>   原因分析：
+>   
+>   ~~~txt
+>   查询返回的列没有用于区分权限的 id，导致 mybatis 不知道如何区分。
+>   于是把每一条记录都映射成了一个对象。
+>   ~~~
+>   
+>   解决方案：
+>   
+>   ~~~txt
+>   要把 [主表的主键] 查询出来。
+>   ~~~
+>   
+>   修改查询语句如下：
+>   
+>   ~~~xml
+>   <select id="findDeptAndEmp" resultMap="rm_dept_emp">
+>       SELECT d.dept_id, d.dept_name, e.emp_name
+>       FROM dept d
+>       LEFT OUTER JOIN emp e ON d.dept_id = e.emp_dept_id
+>   </select>
+>   ~~~
+>   
+>   
+
+
+
+
+
+
+
+## 逆向工程
 
 
 
@@ -2418,10 +2815,7 @@ MyBatis 相关标签：
 
 
 
-
-
-
-# 日志
+# **日志**
 
 ---
 
