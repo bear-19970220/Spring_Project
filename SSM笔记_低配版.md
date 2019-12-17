@@ -71,7 +71,7 @@
    此时 Maven 会自动下载一些 web 相关的资源，如 junit 和一些插件。
    ~~~
 
-9. 配置 jar 包（pom.xml）
+9. 配置 jar 包（**pom.xml**）
 
    ~~~xml
    <!-- 
@@ -92,6 +92,23 @@
            <artifactId>junit</artifactId>
            <version>4.12</version>
            <scope>test</scope>
+       </dependency>
+   </dependencies>
+   ~~~
+
+   注：可以声明变量（如：全局控制 version）
+
+   ~~~xml
+   <properties>
+       <spring.version>5.2.1.RELEASE</spring.version>
+   </properties>
+   
+   <dependencies>
+       <!-- https://mvnrepository.com/artifact/org.springframework/spring-context -->
+       <dependency>
+           <groupId>org.springframework</groupId>
+           <artifactId>spring-context</artifactId>
+           <version>${spring.version}</version>
        </dependency>
    </dependencies>
    ~~~
@@ -1478,7 +1495,33 @@ public class DemoTest {
 
 # **SpringMVC**
 
-## 快速入门：XML
+---
+
+## SpringMVC 与 Struts 2
+
+| 共同点                                 |
+| -------------------------------------- |
+| 都是表现层框架，都基于 MVC 模型编写。  |
+| 它们的底层都离不开原始的 ServletAPI。  |
+| 它们处理请求的机制都是一个核心控制器。 |
+
+
+
+|                 SpringMVC                 |                         Struts2                         |
+| :---------------------------------------: | :-----------------------------------------------------: |
+|  入口是 **Servlet**（DispatcherServlet）  |   入口是 **Filter**（StrutsPreparedAndExcuteFilter）    |
+|        基于**方法**设计，效率稍快         |  基于**类**设计（Action），每次执行都会创建一个动作类   |
+| 更简洁，支持 JSR303，处理 ajax 请求更方便 | 强大的 **OGNL** 表达式使开发效率相对比 SpringMVC 高些， |
+|                                           |              但执行效率并没有比 JSTL 高，               |
+|                                           | 尤其是 Struts2 的表单标签，效率远没有 HTML 的执行效率高 |
+
+
+
+
+
+
+
+## 快速入门：**XML**
 
 ### 1. 环境搭建
 
@@ -1515,6 +1558,16 @@ public class DemoTest {
 >    	- web
 >    ~~~
 >
+>    由于 Maven 工程，依赖的引入应该都靠 pom.xml， tomcat 的依赖包也不例外：
+>
+>    ~~~xml
+>    <dependency>
+>        <groupId>javax.servlet</groupId>
+>        <artifactId>servlet-api</artifactId>
+>        <version>2.5</version>
+>    </dependency>
+>    ~~~
+>
 > 5. 在 web.xml 中配置**核心控制器**（DispatcherServlet）
 >
 >    ~~~xml
@@ -1525,15 +1578,154 @@ public class DemoTest {
 >    </servlet>
 >    <servlet-mapping>
 >        <servlet-name>dispatcherServlet</servlet-name>
+>    	<!-- 设置只有 .smvc 后缀的请求才能进入 SpringMVC -->
 >        <url-pattern>*.smvc</url-pattern>
 >    </servlet-mapping>
->    <!-- 设置只有 .smvc 后缀的请求才能进入 SpringMVC -->
 >    ~~~
 >
 >    
 
 
 
+### 2. 创建一个 Controller 类
+
+~~~java
+// 实现 Controller 类（org.springframework.web.servlet.mvc.Controller）
+public class DemoController implements Controller {
+    // 重写其中唯一的方法 handleRequest
+    @Override
+    public ModelAndView handleRequest(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws Exception {
+        // 执行操作
+        System.out.println("来啦，老弟！");
+        return null;
+    }
+}
+~~~
+
+
+
+### 3. 将 Controller 放入 Spring 容器
+
+~~~xml
+<!-- id 属性的值出现 / ，表示这是访问的路径 -->
+<bean id="/demoController.smvc" class="com.dfbz.DemoController"/>
+~~~
+
+
+
+### 4. 请求 Controller
+
+~~~txt
+http://localhost:8080/SpringMVC01/demoController.smvc
+~~~
+
+
+
+### 5. 实现页面**转发**
+
+~~~java
+public class DemoController implements Controller {
+    @Override
+    public ModelAndView handleRequest(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws Exception {
+        // 执行操作
+        System.out.println("来啦，老弟！");
+        // 创建一个 ModelAndView 对象，并为指定一个视图名称（由 DispatcherServlet 解析）
+        ModelAndView mav = new ModelAndView();
+        mav.setViewName("/index.jsp");
+        // 返回 ModelAndView 给处理器适配器（HandlerAdapter）
+        return mav;
+    }
+}
+~~~
+
+~~~txt
+注：
+	mav.setViewName("/index.jsp");
+	这里的 index.jsp 前可以不加 / ，SpringMVC 会自动补充。
+~~~
+
+
+
+### 6. 设置域属性
+
+~~~java
+public class DemoController implements Controller {
+    @Override
+    public ModelAndView handleRequest(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws Exception {
+        // 执行操作
+        System.out.println("来啦，老弟！");
+        ModelAndView mav = new ModelAndView();
+        mav.setViewName("/index.jsp");
+        // 给 ModelAndView 设置一个属性（默认被 DispatcherServlet 解析后放在 Request 域中）
+        mav.addObject("message", "请求域属性");
+        return mav;
+    }
+}
+~~~
+
+~~~txt
+在页面中通过 ${requestScope.message} 可以获取该属性值。
+~~~
+
+
+
+
+
+## SpringMVC 执行流程
+
+> 1. 发起请求到**前端控制器**（DispatcherServlet）
+>
+> 2. 前端控制器调用**处理器映射器**（HandlerMapping）查找对应的**处理器** （Handler）（根据 XML / 注解配置）
+>
+> 3. HandlerMapping 向前端控制器**返回 Handler**。
+>
+>    ~~~txt
+>    HandlerMapping 会把请求映射为 HandlerExecutionChain 对象
+>    包含：
+>    	一个 Handler 处理器（页面控制器）对象
+>    	多个 HandlerInterceptor 拦截器对象
+>    	
+>    通过这种策略模式，很容易添加新的映射策略
+>    ~~~
+>
+> 4. 前端控制器调用**处理器适配器**（HandlerAdapter）**执行 Handler**
+>
+> 5. HandlerAdapter 将会根据适配的结果去执行 Handler
+>
+> 6. Handler 执行完成后会封装成一个 **ModelAndView** 返回给 HandlerAdapter
+>
+> 7. HandlerAdapter 再将 ModelAndView 递给前端控制器
+>
+>    ~~~txt
+>    ModelAndView 是 SpringMVC 框架的一个底层对象，包括 Model和view
+>    ~~~
+>
+> 8. 前端控制器将请求的路径交给**视图解析器**（ViewResolver ）进行解析
+>
+>    ~~~txt
+>    根据逻辑视图名解析成真正的视图（JSP），通过这种策略很容易更换其他视图技术，只需更改视图解析器即可。
+>    ~~~
+>
+> 9. 前端控制器进行**视图渲染**
+>
+>    ~~~txt
+>    视图渲染将模型数据（在 ModelAndView 对象中）填充到 request 域。
+>    ~~~
+>
+>    
+
+- 总结：
+
+  ~~~txt
+  1.  DispatcherServlet 在 web.xml 中的部署描述，从而拦截请求到 Spring Web MVC
+  2.  HandlerMapping 的配置，从而将请求映射到处理器
+  3.  HandlerAdapter 的配置，从而支持多种类型的处理器
+  4.  ViewResolver 的配置，从而将逻辑视图名解析为具体视图技术
+  5.  处理器（页面控制器）的配置，从而进行功能处理 
+  View 是一个接口，实现类支持不同的 View 类型（jsp、freemarker、pdf...）
+  
+  注：处理器映射器和适配器使用注解的话包含在了注解驱动中，不需要在单独配置
+  ~~~
 
 
 
@@ -1543,14 +1735,7 @@ public class DemoTest {
 
 
 
-
-
-
-
-
-
-
-
+## 快速入门：**注解**
 
 
 
