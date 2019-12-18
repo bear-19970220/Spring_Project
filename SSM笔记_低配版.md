@@ -1583,6 +1583,11 @@ public class DemoTest {
 >    </servlet-mapping>
 >    ~~~
 >
+>    ~~~txt
+>    注：
+>    	如果请求为 /demo.smvc，那么，Controller 的请求路径可以是 /demo.smvc，也可以是 /demo
+>    ~~~
+>    
 >    
 
 
@@ -1613,7 +1618,36 @@ public class DemoController implements Controller {
 
 
 
-### 4. 请求 Controller
+### 4. 让前端控制器自动读取 Spring 配置
+
+~~~txt
+默认可以自动读取，但必须满足以下两个条件：
+	- 放在 WEB-INF 下
+	- 以 [前端控制器的 servlet-name]-servlet.xml 命名
+	 （如：下面配置中前端控制器以 dispatcherServlet 命名，则 Spring 的配置名称必须为：dispatcherServlet-servlet.xml）
+~~~
+
+自定义：
+
+~~~xml
+<servlet>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
+    <!-- 以初始化参数的形式配置（参数名唯一） -->
+    <init-param>
+        <param-name>contextConfigLocation</param-name>
+        <param-value>classpath:spring.xml</param-value>
+    </init-param>
+</servlet>
+<servlet-mapping>
+    <servlet-name>dispatcherServlet</servlet-name>
+    <url-pattern>*.smvc</url-pattern>
+</servlet-mapping>
+~~~
+
+
+
+### 5. 请求 Controller
 
 ~~~txt
 http://localhost:8080/SpringMVC01/demoController.smvc
@@ -1621,7 +1655,7 @@ http://localhost:8080/SpringMVC01/demoController.smvc
 
 
 
-### 5. 实现页面**转发**
+### 6. 实现页面**转发**
 
 ~~~java
 public class DemoController implements Controller {
@@ -1629,7 +1663,7 @@ public class DemoController implements Controller {
     public ModelAndView handleRequest(HttpServletRequest httpServletRequest, HttpServletResponse httpServletResponse) throws Exception {
         // 执行操作
         System.out.println("来啦，老弟！");
-        // 创建一个 ModelAndView 对象，并为指定一个视图名称（由 DispatcherServlet 解析）
+        // 创建一个 ModelAndView 对象，并指定返回的视图的名称（由 DispatcherServlet 解析）
         ModelAndView mav = new ModelAndView();
         mav.setViewName("/index.jsp");
         // 返回 ModelAndView 给处理器适配器（HandlerAdapter）
@@ -1637,6 +1671,12 @@ public class DemoController implements Controller {
     }
 }
 ~~~
+
+- 可以在创建 ModelAndView 时指定返回视图名称：
+
+  ~~~java
+  ModelAndView mav = new ModelAndView("/index.jsp");
+  ~~~
 
 ~~~txt
 注：
@@ -1646,7 +1686,7 @@ public class DemoController implements Controller {
 
 
 
-### 6. 设置域属性
+### 7. 设置域属性
 
 ~~~java
 public class DemoController implements Controller {
@@ -1655,7 +1695,7 @@ public class DemoController implements Controller {
         // 执行操作
         System.out.println("来啦，老弟！");
         ModelAndView mav = new ModelAndView();
-        mav.setViewName("/index.jsp");
+        mav.setViewName("index.jsp");
         // 给 ModelAndView 设置一个属性（默认被 DispatcherServlet 解析后放在 Request 域中）
         mav.addObject("message", "请求域属性");
         return mav;
@@ -1692,12 +1732,12 @@ public class DemoController implements Controller {
 >
 > 5. HandlerAdapter 将会根据适配的结果去执行 Handler
 >
-> 6. Handler 执行完成后会封装成一个 **ModelAndView** 返回给 HandlerAdapter
+> 6. Handler 执行完成后会封装成 **ModelAndView** （模型和视图）返回给 HandlerAdapter
 >
 > 7. HandlerAdapter 再将 ModelAndView 递给前端控制器
 >
 >    ~~~txt
->    ModelAndView 是 SpringMVC 框架的一个底层对象，包括 Model和view
+>    ModelAndView 包括 Model 和 view，是 SpringMVC 框架的一个底层对象，
 >    ~~~
 >
 > 8. 前端控制器将请求的路径交给**视图解析器**（ViewResolver ）进行解析
@@ -1709,11 +1749,23 @@ public class DemoController implements Controller {
 > 9. 前端控制器进行**视图渲染**
 >
 >    ~~~txt
->    视图渲染将模型数据（在 ModelAndView 对象中）填充到 request 域。
->    ~~~
->
+>    视图渲染将模型数据（在 ModelAndView / Model 中）填充到 request 域。
 >    
+>    ~~~
+> - 如果是重定向，模型数据会以参数的形式附在 URL 上。
+>    ~~~
+>    
+>    
+>    ~~~
 
+- SpringMVC 三大组件：
+
+  ~~~txt
+  处理器映射器：RequestMappingHandlerMapping
+  处理器适配器：RequestMappingHandlerAdapter
+  处理器解析器：ExceptionHandlerExceptionResolver
+  ~~~
+  
 - 总结：
 
   ~~~txt
@@ -1736,6 +1788,343 @@ public class DemoController implements Controller {
 
 
 ## 快速入门：**注解**
+
+### 1. 在 Controller 类上添加注解
+
+~~~java
+// @Controller：代替实现 Controller 接口
+@Controller
+public class DemoController {
+    // @RequertMapping：代替 Spring 配置中的 <bean> 配置（ / 也可以不带，建议带上）
+    @RequestMapping("/sayHi.smvc")
+    public ModelAndView sayHi() {
+        System.out.println("来啦，老弟！");
+        ModelAndView mav = new ModelAndView("index.jsp");
+        mav.addObject("message", "你好呀！");
+        return mav;
+    }
+}
+~~~
+
+
+
+### 2. 开启包扫描和注解支持
+
+在 Spring.xml 中追加：
+
+~~~xml
+<context:component-scan base-package="com.dfbz"/>
+
+<mvc:annotation-driven/>
+~~~
+
+
+
+
+
+
+
+
+
+
+
+## Controller 的方法返回值
+
+### 返回 ModelAndView
+
+~~~java
+// ModelAndView是SpringMVC帮我们提供的，即"模型和视图"
+@RequestMapping("/ctrl_modelAndView.smvc")
+public ModelAndView ctrl_modelAndView() {
+    ModelAndView mav = new ModelAndView("index.jsp");
+    mav.addObject("message", "你好呀！");
+    return mav;
+}
+~~~
+
+
+
+### 返回 void
+
+~~~java
+// 一般用于原生的 Servlet 对象，或者 ajax 请求
+@RequestMapping("/ctrl_void.smvc")
+public void ctrl_void(HttpServletResponse response) throws IOException {
+    response.setContentType("text/html;charset=UTF-8");
+    response.getWriter().append("你好呀！");
+}
+~~~
+
+
+
+### 返回字符串
+
+~~~java
+// 可以返回视图字符串，解析器会自动解析（默认为）
+@RequestMapping("/ctrl_string.smvc")
+public String ctrl_string(){
+    return "index.jsp";
+}
+~~~
+
+
+
+#### 转发、重定向
+
+~~~txt
+SpringMVC 会自动解析 forward、redirect 等特殊字符串
+	- forward：转发
+	- redirect：重定向
+
+注：视图解析器配置的前缀和后缀解析不支持 forward 和 redirect
+~~~
+
+> - **转发**
+>
+>   ~~~java
+>   @RequestMapping("/ctrl_forward.smvc")
+>   public String ctrl_forward() {
+>       return "forward:/index.jsp";
+>   }
+>   ~~~
+>
+>   > 相当于：
+>   >
+>   > ~~~java
+>   > @RequestMapping("/ctrl_forward.smvc")
+>   > public ModelAndView ctrl_forward() {
+>   >     // 自己 new 一个 ModelAndView 对象
+>   >     ModelAndView mav = new ModelAndView("forward:/index.jsp");
+>   >     return mav;
+>   > }
+>   > ~~~
+>   >
+>   > > 或者：
+>   > >
+>   > > ~~~java
+>   > > @RequestMapping("/ctrl_forward.smvc")
+>   > > public ModelAndView ctrl_forward(ModelAndView mav) {
+>   > >     // 由 SpringMVC 自动传入 ModelAndView（从容器中查找并注入？）
+>   > >     mav.setViewName("redirect:/index.jsp");
+>   > >     return mav;
+>   > > }
+>   > > ~~~
+>
+>   ---
+>
+>   如何添加模型数据（设置域属性）？
+>
+>   ~~~java
+>   @RequestMapping("/ctrl_forward.smvc")
+>   public String ctrl_forward(Model model) {
+>       // 单独注入 Model
+>       model.addAttribute("message", "你好呀！");
+>       return "forward:/index.jsp";
+>   }
+>   ~~~
+>
+>   
+>
+>   
+>
+> - **重定向**
+>
+>   ~~~java
+>   @RequestMapping("/ctrl_redirect.smvc")
+>   public String ctrl_redirect() {
+>       return "redirect:/index.jsp";
+>   }
+>   ~~~
+>
+>   添加模型数据：
+>
+>   ~~~java
+>   @RequestMapping("/ctrl_redirect.smvc")
+>   public String ctrl_redirect(Model model) {
+>       model.addAttribute("message", "你好呀！");
+>       return "redirect:/index.jsp";
+>   }
+>   /**
+>    * SpringMVC 会将模型数据解析后放到 Request 域，但如果是重定向，数据会变成 URL 参数：
+>    * http://.../index.jsp?message=%3F%3F%3F%3F
+>    * 相当于：message=????，还乱码了！（Response.setContentType(..) 是没有用的！）
+>    * 
+>    * TODO：算了，暂时先不折腾...
+>    */
+>   ~~~
+>
+>   所以，重定向还是乖乖使用 Session 域存放数据吧！
+>
+>   ~~~java
+>   @RequestMapping("/ctrl_redirect.smvc")
+>   public String ctrl_redirect(HttpSession session) {
+>       session.setAttribute("message", "你好呀！");
+>       return "redirect:/index.jsp";
+>   }
+>   ~~~
+>
+>   
+
+
+
+
+
+
+
+
+
+## 关于 **@RequestMapping** 路径映射
+
+### 命名空间
+
+说明：
+
+~~~txt
+@RequestMapping 注解在方法上，配置一个请求路径。
+
+但是，如果业务分有多个模块，如：admin、user、...
+为了更好地标识每个模块，为了避免不必要的冲突，需要一个命名空间，如：/admin/login、/user/login
+
+所以，@RequestMapping 提供了两个注解的位置：
+	- 类
+	- 方法
+~~~
+
+~~~java
+@Controller
+@RequestMapping("/demo")	// 在类上：定义一级访问目录
+public class DemoController {
+    
+    @RequestMapping("/ctrl_redirect.smvc")	// 在方法上：定义二级访问目录
+    public String ctrl_redirect(HttpSession session) {
+        session.setAttribute("message", "你好呀！");
+        return "redirect:/index.jsp";
+    }
+    
+}
+~~~
+
+
+
+
+
+### 属性说明
+
+~~~txt
+value：指定请求的 URL，相当于 path 属性
+
+method：指定请求的方式（默认接受任意方式，共七种）
+	method = {RequestMethod.POST, RequestMethod.GET}：只接受 GET、POST 请求。
+	
+params：限定请求参数（仅支持简单的表达式）
+	params = {"a=10"}：只有请求里有参数 a 且 a=10，才能请求成功。（区分大小写）
+	params = {"a!=10"}：请求参数里可以没有参数 a
+	
+	params={"a"}：请求参数里必须包含 a
+	params={"!a","!b"}：请求参数里必须没有 a 和 b
+~~~
+
+
+
+
+
+
+
+## RESTFUL
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## **数据绑定**
+
+说明
+
+~~~txt
+封装表单数据。
+~~~
+
+
+
+### 自动绑定
+
+> - 基本类型、基本类型的包装类型、String（当类型不匹配，会响应 400 错误）
+>
+>   ~~~java
+>   // 参数名必须与请求参数名 / 表单中的 name 一致！
+>   @RequestMapping("/bang01.smvc")
+>   public void bang01(String username){
+>       System.out.println(username);
+>   }
+>   ~~~
+>
+>   ~~~txt
+>   http://.../demo/bang01.smvc?username=张三
+>   ~~~
+>
+>   
+>
+> - 包装类型（一般为实体类（POJO 类））
+>
+>   ~~~java
+>   // 实体类的属性名必须与请求参数名 / 表单中的 name 一致！
+>   @RequestMapping("/bang02.smvc")
+>   public void bang02(User user){
+>       System.out.println(user);
+>   }
+>   ~~~
+>
+>   
+>
+> - 数组
+>
+>   ~~~java
+>   // 这个参数名也不能乱起，只能是 id
+>   @RequestMapping("/bang03")
+>   public void bang03(int[] id){
+>       System.out.println(Arrays.toString(id));
+>   }
+>   ~~~
+>
+>   ~~~txt
+>   http://.../demo/bang03.smvc?id=1,2,3
+>   ~~~
+>
+>   
+>
+>   
+
+### 手动绑定
+
+
+
+
+
+
+
+
+
+
 
 
 
