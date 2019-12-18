@@ -11,8 +11,22 @@ To change this template use File | Settings | File Templates.
     <title>首页</title>
 </head>
 <body>
-你好，${requestScope.message}
+request：${requestScope.message}
+session：${sessionScope.message}
 
-<a href="${pageContext.request.contextPath}/demoC.smvc">点击</a>
+<a href="${pageContext.request.contextPath}/sayHi.smvc">点击</a>
+
+<hr/>
+
+
+<form action="${pageContext.request.contextPath}/">
+    <input type="checkbox" name="">
+
+
+
+    <input type="submit" value="POJO 数组">
+</form>
+
+
 </body>
 </html>
