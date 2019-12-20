@@ -1583,6 +1583,11 @@ public class DemoTest {
 >    </servlet-mapping>
 >    ~~~
 >
+>    ~~~txt
+>    注：
+>    	如果请求为 /demo.smvc，那么，Controller 的请求路径可以是 /demo.smvc，也可以是 /demo
+>    ~~~
+>    
 >    
 
 
@@ -1746,10 +1751,10 @@ public class DemoController implements Controller {
 >    ~~~txt
 >    视图渲染将模型数据（在 ModelAndView / Model 中）填充到 request 域。
 >    
-> - 如果是重定向，模型数据会以参数的形式附在 URL 上。
+>    - 如果是重定向，模型数据会以参数的形式附在 URL 上。
 >    ~~~
->    
->    
+> 
+> 
 
 - SpringMVC 三大组件：
 
@@ -1785,10 +1790,10 @@ public class DemoController implements Controller {
 ### 1. 在 Controller 类上添加注解
 
 ~~~java
-// @Controller：代替实现 Controller 接口
+// @Controller：加入 Spring 容器（@Component）
 @Controller
 public class DemoController {
-    // @RequertMapping：代替 Spring 配置中的 <bean> 配置（ / 也可以不带，建议带上）
+    // @RequertMapping：设置 URL（ / 也可以不带，建议带上）
     @RequestMapping("/sayHi.smvc")
     public ModelAndView sayHi() {
         System.out.println("来啦，老弟！");
@@ -1973,7 +1978,7 @@ SpringMVC 会自动解析 forward、redirect 等特殊字符串
 说明：
 
 ~~~txt
-@RequestMapping 注解在方法上，配置一个请求路径。
+@RequestMapping 注解在方法上，配置一个请求路径（将 Http 的请求映射到我们的控制器和处理方法上）。
 
 但是，如果业务分有多个模块，如：admin、user、...
 为了更好地标识每个模块，为了避免不必要的冲突，需要一个命名空间，如：/admin/login、/user/login
@@ -2049,7 +2054,7 @@ params：限定请求参数（仅支持简单的表达式）
 
 
 
-## 数据绑定
+## **数据绑定**
 
 说明
 
@@ -2059,15 +2064,384 @@ params：限定请求参数（仅支持简单的表达式）
 
 
 
-### 自动绑定
-
-
-
 ### 手动绑定
 
+~~~txt
+使用原生的 ServletAPI：
+	- HttpServletRequest
+	- HttpServletResponse
+~~~
 
 
 
+### 自动绑定
+
+​	**注**：以下所有请求均为 GET 请求，**POST 请求有乱码，之后解决！**
+
+> - 基本类型、基本类型的包装类型、String（当类型不匹配，会响应 400 错误）
+>
+>   ~~~java
+>   // 参数名必须与请求参数名 / 表单中的 name 一致！
+>   @RequestMapping("/databind_base.smvc")
+>   public void bang01(String username){
+>       System.out.println(username);
+>   }
+>   ~~~
+>
+>   ~~~txt
+>   http://.../demo/bang01.smvc?username=张三
+>   ~~~
+>
+> - 包装类型（一般为实体类（POJO 类））
+>
+>   ~~~java
+>   // 实体类的属性名必须与请求参数名 / 表单中的 name 一致！
+>   @RequestMapping("/databind_pojo.smvc")
+>   public void bang02(User user){
+>       System.out.println(user);
+>   }
+>   ~~~
+>
+> - 数组
+>
+>   ~~~java
+>   // 这个参数名也不能乱起，只能是 id
+>   @RequestMapping("/databind_pojo_array")
+>   public void bang03(int[] id){
+>       System.out.println(Arrays.toString(id));
+>   }
+>   ~~~
+>
+>   ~~~txt
+>   http://.../demo/bang03.smvc?id=1,2,3---
+>   ~~~
+>
+>---
+> 
+>- List 集合（集合元素为基本类型、基本类型的包装类型、String）
+> 
+>  ~~~html
+>   <!-- User 的属性：List<String> hobbits  -->
+>   <form action="..." method="GET">
+>       <input type="checkbox" name="hobbits" value="唱"/>
+>       <input type="checkbox" name="hobbits" value="跳"/>
+>       <input type="checkbox" name="hobbits" value="rap"/>
+>       <input type="submit" value="提交">
+>   </form>
+>   ~~~
+> 
+>- Map（集合元素为基本类型、基本类型的包装类型、String）
+> 
+>  ~~~html
+>   <!-- User 的属性：Map<String, String> map -->
+>   <form action="${pageContext.request.contextPath}/demo/bang4.smvc" method="GET">
+>       <input type="input" name="map['p1']" value="张三">
+>       <input type="input" name="map['p2']" value="李四">
+>       <input type="input" name="map['p3']" value="王五">
+>       <input type="submit" value="POJO 数组">
+>   </form>
+>   ~~~
+> 
+>  ~~~txt
+>   封装 key + value：map={p1=张三, p2=李四, p3=王五}
+>   ~~~
+> 
+>  
+> 
+>- 对象属性
+> 
+>  ~~~html
+>   <!-- User 的属性：Address addr  -->
+>   <form action="..." method="GET">
+>       <input type="input" name="addr.aname" value="广州"/>
+>       <input type="submit" value="提交"/>
+>   </form>
+>   ~~~
+> 
+>- List 集合（对象元素）
+> 
+>  ~~~html
+>   <!-- User 的属性：List<Address> addrs  -->
+>   <form action="..." method="GET">
+>       <input type="input" name="addrs[3].aname" value="广州"/>
+>       <input type="input" name="addrs[1].aname" value="深圳"/>
+>       <input type="input" name="addrs[5].aname" value="珠海"/>
+>       <input type="submit" value="提交"/>
+>   </form>
+>   ~~~
+> 
+>  ~~~txt
+>   List 集合会从 0 开始，直到最大下标索引：null, 深圳, null, 广州, null, 珠海
+>   ~~~
+> 
+>  
+
+- POST 请求乱码：
+
+  ~~~xml
+  <!-- 在 web.xml 中配置 Spring 提供的过滤器 -->
+  <filter>
+      <filter-name>characterEncodingFilter</filter-name>
+      <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+      <init-param>
+          <param-name>encoding</param-name>
+          <param-value>UTF-8</param-value>
+      </init-param>
+  </filter>
+  <filter-mapping>
+      <filter-name>characterEncodingFilter</filter-name>
+      <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  ~~~
+
+  
+
+
+
+
+
+
+
+## SpringMVC **常用注解**
+
+
+
+### 绑定表单参数 @RequestParam
+
+当表单参数名（name）与 Controller 的参数名不一致：
+
+~~~java
+@RequestMapping("/ctrl_requestParam")
+public void ctrl_requestParam(
+    @RequestParam("u_name") String username,
+    @RequestParam("u_pswd") String password
+) {
+    System.out.println(uname + " - " + usex);
+}
+~~~
+
+
+
+### 绑定路径参数 @PathVariable
+
+将参数作为请求路径的一部分（RESTFUL 风格）：/ { 参数名 } /
+
+> ~~~txt
+> http://.../demo/ctrl_pathVariable/极光之域/123456.smvc
+> ~~~
+>
+> 
+>
+> - 参数名一致
+>
+>   ~~~java
+>   @RequestMapping("/ctrl_pathVariable/{username}/{password}")
+>   public void ctrl_pathVariable(
+>       @PathVariable String username,
+>       @PathVariable String password
+>   ) {
+>       System.out.println(username + " - " + password);
+>   }
+>   ~~~
+>
+> - 参数名不一致
+>
+>   ~~~java
+>   @RequestMapping("/ctrl_pathVariable/{u_name}/{u_pswd}")
+>   public void ctrl_pathVariable(
+>       @PathVariable("u_name") String username,
+>       @PathVariable("u_pswd") String password
+>   ) {
+>       System.out.println(username + " - " + password);
+>   }
+>   ~~~
+>
+>   
+
+
+
+### 获取请求头 @RequestHeader
+
+~~~java
+@RequestMapping("/ctrl_requestHeader")
+public void ctrl_requestHeader(@RequestHeader("User-Agent") String req_userAgent) {
+    System.out.println(req_userAgent);
+}
+~~~
+
+
+
+### 获取 Cookie @CookieValue
+
+~~~java
+@RequestMapping("/ctrl_cookieValue")
+public void ctrl_cookieValue(@CookieValue("JSESSIONID") String sessionId){
+    System.out.println(sessionId);
+}
+~~~
+
+
+
+### 取 Session @SessionAttribute
+
+~~~java
+@RequestMapping("/ctrl_sessionAttribute")
+public void ctrl_sessionAttribute(@SessionAttribute("user") User user) {
+    System.out.println(user);
+}
+~~~
+
+
+
+### 存 Session @SessionAttributes 
+
+将 Model 和 ModelMap 中指定 Key 或者指定的属性值也存入一份进 Session 域（默认会被存入 Request）
+
+~~~txt
+Model 是一个接口， 其实现类为 ExtendedModelMap，继承了 ModelMap 类。
+
+一般来说，可以用 Model 来接收各种类型的数据；
+如果接收一组数据 List，那么这时候的 Model 实际上是 ModelMap。
+~~~
+
+~~~txt
+@SessionAttributes 属性：
+	- names：指定属性名
+	- value（同上）
+	- types：指定类型
+~~~
+
+> - 指定属性名
+>
+>   ~~~java
+>   @Controller
+>   @RequestMapping("/demo")
+>   @SessionAttributes(
+>       names = {"username", "password"}, 	// 指定为 username、password 的属性
+>       types = {User.class}	// 指定类型为 User 的属性
+>   )
+>   public class DemoController {
+>   
+>       @RequestMapping("/ctrl_sessionAttributes")
+>       public String ctrl_sessionAttributes(Model model) {
+>           
+>           User userInfo = new User("极光之域", "123456");              
+>           model.addAttribute("user", userInfo);
+>           model.addAttribute("username", "极光之域");
+>           model.addAttribute("password", "123456");
+>           
+>           return "redirect:/index.jsp";
+>           
+>       }
+>   
+>   }
+>   ~~~
+>
+>   
+
+
+
+
+
+
+
+## 格式化参数
+
+说明
+
+~~~txt
+SpringMVC 之所以能够帮我们实现自动数据类型转换，是因为 SpringMVC 提供了非常多的转换器（Converter）
+
+如果要自定义转换器，必须实现 Converter 接口。
+~~~
+
+~~~java
+// 接口源码：
+// Converter <S, T>：Source 传入进来的类型，Target 转换之后的类型
+package org.springframework.core.convert.converter;
+
+@java.lang.FunctionalInterface
+    public interface Converter <S, T> {
+    @org.springframework.lang.Nullable
+        T convert(S s);
+}
+~~~
+
+
+
+### 实现日期自动转换
+
+> 1. 创建一个类，实现 Converter 接口
+>
+>    ~~~java
+>    public class StringToDateConverter implements Converter<String, Date> {
+>        @Override
+>        public Date convert(String dateStr) {
+>            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+>            try {
+>                return sdf.parse(dateStr);
+>            } catch (ParseException e) {
+>                e.printStackTrace();
+>            }
+>            return null;
+>        }
+>    }
+>    ~~~
+>
+> 2. 将自定义转换器添加至 SpringMVC 转换器大家族
+>
+>    ~~~xml
+>    <bean id="myConverters" class="org.springframework.format.support.FormattingConversionServiceFactoryBean">
+>        <!-- 可配置多个 -->
+>        <property name="converters">
+>            <set>
+>                <bean class="com.dfbz.converter.StringToDateConverter"></bean>
+>            </set>
+>        </property>
+>    </bean>
+>    ~~~
+>
+>    并在注解支持驱动中重新指定转换器
+>
+>    ~~~xml
+>    <mvc:annotation-driven conversion-service="myConverters"/>
+>    ~~~
+>
+>    
+
+
+
+
+
+
+
+## Conteoller 的生命周期
+
+~~~txt
+Spring 框架默认以单例的形式创建对象，所以业务控制器是一个单例对象。
+
+可通过 @Scope 注解设置作用域（详见 Spring 的 @Scope）
+~~~
+
+测试：
+
+~~~java
+@Controller
+@Scope("request")
+@RequestMapping("/demo")
+public class DemoController {
+
+    public DemoController() {
+        System.out.println("创建 DemoController 成功！");
+    }
+
+    @RequestMapping("/ctrl_scope")
+    public void ctrl_scope(){
+        // ...
+    }
+
+}
+~~~
 
 
 
@@ -2703,7 +3077,7 @@ public class MyBatisUtils {
   >~~~xml
   > <!-- 此时，属性名必须取自实体类属性！ -->
   > <insert id="addUser">
-  >    INSERT INTO t_user(uid, uname) VALUES (#{uid}, #{uname});
+  >        INSERT INTO t_user(uid, uname) VALUES (#{uid}, #{uname});
   > </insert>
   > ~~~
   > 
@@ -3479,20 +3853,20 @@ log4j.appender.appenderName.layout.操作N = 值N
 > ~~~java
 > public class Log4jTest {
 > 
->     private static Logger logger;
->     static {
->         logger = Logger.getLogger(Log4jTest.class);
->     }
+>        private static Logger logger;
+>        static {
+>            logger = Logger.getLogger(Log4jTest.class);
+>        }
 > 
->     @Test
->     public void test() {
->         logger.trace("TRACE 日志");
->         logger.debug("DEBUG 日志");
->         logger.info("INFO 日志");
->         logger.warn("WARN 日志");
->         logger.error("ERROR 日志");
->         logger.fatal("FATAL 日志");
->     }
+>        @Test
+>        public void test() {
+>            logger.trace("TRACE 日志");
+>            logger.debug("DEBUG 日志");
+>            logger.info("INFO 日志");
+>            logger.warn("WARN 日志");
+>            logger.error("ERROR 日志");
+>            logger.fatal("FATAL 日志");
+>        }
 > 
 > }
 > ~~~
