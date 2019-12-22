@@ -252,7 +252,7 @@ Maven 项目一经运行，会打包生成一个 target 文件夹。
 
 
 
-# Spring
+# **<font color="lightgreen">Spring</font>**
 
 ---
 
@@ -1493,7 +1493,7 @@ public class DemoTest {
 
 
 
-# **SpringMVC**
+# **<font color="lightskyblue">SpringMVC</font>**
 
 ---
 
@@ -1552,7 +1552,7 @@ public class DemoTest {
 >    ~~~
 >
 >    ~~~xml
->    webmvc 的其他依赖：
+>    webmvc 包含的其他依赖：
 >    	- bean、core、context、expression
 >    	- aop
 >    	- web
@@ -2128,7 +2128,7 @@ params：限定请求参数（仅支持简单的表达式）
 >       <input type="checkbox" name="hobbits" value="rap"/>
 >       <input type="submit" value="提交">
 >   </form>
->   ~~~
+>  ~~~
 > 
 >- Map（集合元素为基本类型、基本类型的包装类型、String）
 > 
@@ -2140,11 +2140,11 @@ params：限定请求参数（仅支持简单的表达式）
 >       <input type="input" name="map['p3']" value="王五">
 >       <input type="submit" value="POJO 数组">
 >   </form>
->   ~~~
+>  ~~~
 > 
 >  ~~~txt
 >   封装 key + value：map={p1=张三, p2=李四, p3=王五}
->   ~~~
+>  ~~~
 > 
 >  
 > 
@@ -2156,7 +2156,7 @@ params：限定请求参数（仅支持简单的表达式）
 >       <input type="input" name="addr.aname" value="广州"/>
 >       <input type="submit" value="提交"/>
 >   </form>
->   ~~~
+>  ~~~
 > 
 >- List 集合（对象元素）
 > 
@@ -2168,11 +2168,11 @@ params：限定请求参数（仅支持简单的表达式）
 >       <input type="input" name="addrs[5].aname" value="珠海"/>
 >       <input type="submit" value="提交"/>
 >   </form>
->   ~~~
+>  ~~~
 > 
 >  ~~~txt
 >   List 集合会从 0 开始，直到最大下标索引：null, 深圳, null, 广州, null, 珠海
->   ~~~
+>  ~~~
 > 
 >  
 
@@ -2451,6 +2451,151 @@ public class DemoController {
 
 
 
+## SpringMVC **拦截规则**
+
+### 为何要拦截？
+
+—— 不希望请求的路径中带有 .smvc 这样的后缀。
+
+拦截方式：
+
+~~~txt
+*.smvc
+	拦截所有以 .smvc 为后缀的请求
+/
+	拦截 JSP 以外的请求（html、css、js 等静态资源也会拦截）
+/*
+	拦截所有请求
+~~~
+
+拦截了会怎么样？
+
+~~~txt
+- SpringMVC 拦截请求以后，会匹配相应的 Handler，如果找不到，则会报 404 错误。
+
+- 静态资源不是 Handler，所以必定 404。
+~~~
+
+
+
+
+
+### 三种拦截方式
+
+#### 默认 Servlet 放行
+
+> ~~~txt
+> tomcat 提供的默认 servlet（DefaultServlet）(在 tomcat/conf/web.xml 中有相应配置)
+> 
+> 引用需要导包：tomcat-catalina（虽然 Tomcat 有但是 Maven 需要引用）
+> ~~~
+>
+> ~~~xml
+> <dependency>
+>     <groupId>org.apache.tomcat</groupId>
+>     <artifactId>tomcat-catalina</artifactId>
+>     <version>8.5.45</version>
+>     <!--此 jar 包已在tomcat中，但不引入此依赖项目会报错，因此依赖范围 provided 就行-->
+>     <scope>provided</scope>
+> </dependency>
+> ~~~
+>
+> 回顾 Maven 依赖的范围（（需要 **√**，不需要 **×**））：
+>
+> |              | 编译 | 测试 | 运行 | 打包 |
+> | ------------ | ---- | ---- | ---- | ---- |
+> | **compile**  | √    | √    | √    | √    |
+> | **provided** | √    | √    | ×    | ×    |
+> | **runtime**  | ×    | √    | √    | √    |
+> | **test**     | ×    | √    | ×    | √    |
+>
+> 
+>
+> DefaultServlet 默认 **/** 拦截所有，可以利用它在项目中进行自定义拦截，如：
+>
+> ~~~xml
+> <servlet>
+>     <servlet-name>default</servlet-name>
+>     <servlet-class>org.apache.catalina.servlets.DefaultServlet</servlet-class>
+>     <init-param>
+>         <param-name>debug</param-name>
+>         <param-value>0</param-value>
+>     </init-param>
+>     <init-param>
+>         <param-name>listings</param-name>
+>         <param-value>false</param-value>
+>     </init-param>
+>     <load-on-startup>1</load-on-startup>
+> </servlet>
+> 
+> <!-- 管理 html、jpg 文件 -->
+> <servlet-mapping>
+>     <servlet-name>default</servlet-name>
+>     <url-pattern>*.html</url-pattern>
+> </servlet-mapping>
+> <servlet-mapping>
+>     <servlet-name>default</servlet-name>
+>     <url-pattern>*.jpg</url-pattern>
+> </servlet-mapping>
+> ~~~
+>
+> - DefaultServlet 放行的原理：
+>
+>   ~~~txt
+>   如果请求的后缀已在 DefaultServlet 中配置，那么请求会被 DefaultServlet 拦截，而不会进入 SpringMVC 前端控制器。
+>   
+>   但是，如果 SpringMVC 的拦截规则配置为 /* ，则代表请求会被 SpringMVC 有限拦截，而不会进入 DefaultServlet，也会导致 404 错误。
+>   
+>   所以，若使用 DefaultServlet 配置静态资源拦截，SpringMVC 不能拦截 /* 。
+>   ~~~
+>
+>   
+
+
+
+#### 配置 resources 放行静态资源
+
+> ~~~xml
+> <mvc:resources location="/static/" mapping="/static/**"/>
+> 
+> - location="/static/"：
+> 	表示 webapp 目录下（即服务器根目录）的 static 包下的所有文件（不能写 /static ）
+> - mapping：
+> 	- /static/*：表示以 /static 开头的所有请求路径，如 /static/a
+> 	- /static/**：表示以 /static 开头的所有请求路径，包括 /static/a 和 /static/a/b
+>  
+> 说明：DispatcherServlet 不会拦截以 /static 开头的所有请求路径，并当作静态资源交由 Servlet 处理。
+> ~~~
+>
+> **注：JSP页面不属于静态资源！**如果是常见的浏览器能解析的格式，直接按照协议返回，如果不是浏览器能直接解析的会返回下载头导致下载该 jsp 页面！
+>
+> 
+
+
+
+
+
+#### 配置 SpringMVC 静态资源处理
+
+> ~~~xml
+> <mvc:default-servlet-handler/>
+> ~~~
+>
+> 说明：
+>
+> ~~~xml
+> 配置后，在 WEB 容器启动的时候会在上下文中定义一个 DefaultServletHttpRequestHandler，它会对DispatcherServlet 的请求进行处理：
+> 	- 如果该请求已经作了映射，那么会接着交给后台对应的处理程序
+> 	- 如果没有作映射，就交给默认的 Servlet 处理（DefaultServlet），从而找到对应的静态资源，只有再找不到资源时才会报错。
+> 
+> 一般 WEB 应用服务器默认的 Servlet 都是 default。如果默认 Servlet 用不同名称自定义配置，或者在缺省 Servlet 名称未知的情况下使用了不同的 Servlet 容器，则必须显式提供默认 Servlet 的名称，如下：
+> 
+> <mvc:default-servlet-handler default-servlet-name="myCustomDefaultServlet"/>
+> ~~~
+>
+> 注：DefaultServletHttpRequestHandler 底层也是依赖缺省 Servlet，请求被 SpringMVC 拦截下来之后会判断是否是静态资源，如果是那么就走缺省 Servlet。
+>
+> 
 
 
 
@@ -2462,10 +2607,7 @@ public class DemoController {
 
 
 
-
-
-
-# **MyBatis**
+# **<font color="firebrick">MyBatis</font>**
 
 ---
 
@@ -2613,7 +2755,7 @@ public interface UserMapper {
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
 <!-- namespace 为 dao 接口的全限定类名 -->
-<mapper namespace="com.dfbz.mapper.UserMapper">
+<mapper namespace="com.dfbz.mapper.UserMapper666">
 
     <!-- 返回值类型：查询结果集中每一行记录对应的类型 -->
     <select id="findAllUser" resultType="com.dfbz.domain.User">
@@ -2803,7 +2945,7 @@ public class MyBatisUtils {
   >    
   >    # 输出 mybatis 的 sql 语句与参数 指定 mapper 接口所在的位置的输出级别即可
   >    # log4j.logger.[mapper 接口所在的包名] = TRACE（局部设置）
-  >    log4j.logger.com.dfbz.mapper.UserMapper = TRACE
+  >    log4j.logger.com.dfbz.mapper.UserMapper666 = TRACE
   >    ~~~
   >
   >    
@@ -2865,7 +3007,7 @@ public class MyBatisUtils {
   >    			一劳永逸。
   >     	-->
   >        <mappers>
-  >            <mapper class="com.dfbz.mapper.UserMapper"/>
+  >            <mapper class="com.dfbz.mapper.UserMapper666"/>
   >        </mappers>
   >    
   >    </configuration>
@@ -4234,11 +4376,253 @@ log4j.appender.im.layout.ConversionPattern=[%-5p] %d(%r) --> [%t] %l: %m %x %n
 
 
 
+# **<font color="gold">SSM 整合框架</font>**
+
+---
+
+## 回顾
+
+### <font color="firebrick">MyBatis</font>
+
+> 1. 导入依赖
+>
+>    ~~~txt
+>    - MyBatis
+>    - 数据库连接驱动
+>    - Junit 测试
+>    ~~~
+>
+> 2. 创建 db.properties
+>
+> 3. 创建实体类
+>
+> 4. 创建 Mapper 接口（dao）
+>
+> 5. 创建 Mapper 映射文件
+>
+>    ~~~txt
+>    - 命名空间
+>    - CRUD 标签
+>    ~~~
+>
+> 6. 创建 MyBatis 核心配置文件
+>
+>    ~~~xml
+>    - 加载配置文件：<properties>
+>    - 设置别名：<typeAliases>
+>    - 配置环境：<environment>
+>    	- 事务管理：JDBC
+>    	- 数据源：POOLED
+>    		- 数据源各种属性
+>    - 加载 Mapper 映射文件：<mappers>
+>    ~~~
+>
+> 7. 测试
+>
+>    ~~~txt
+>    - Resources 读取 MyBatis 核心配置
+>    - 工厂制造器 → 工厂获取 SqlSession
+>    - 创建 Mapper
+>    - Mapper 实现 CRUD 操作
+>    ~~~
+>
+>    ~~~java
+>    @Test
+>    public void test_MyBatis() throws IOException {
+>        UserMapper userMapper = new SqlSessionFactoryBuilder()
+>            .build(Resources.getResourceAsReader("MyBatis.cfg.xml"))
+>            .openSession()
+>            .getMapper(UserMapper.class);
+>        userMapper.findAllUser().forEach(u-> System.out.println(u));
+>    }
+>    ~~~
+>    
+>    
+
+### <font color="lightgreen">Spring</font>
+
+> 1. 导入依赖
+>
+>    ~~~txt
+>    - spring-context
+>    	- spring-beans
+>    	- spring-core
+>    	- spring-expression
+>    	- spring-aop
+>    - spring-test
+>    ~~~
+>
+> - XML
+>
+>   2. 创建 Spring 核心配置文件
+>
+>   ~~~txt
+>   - IOC 实例化对象到 Spring 容器
+>   - AOP 切面
+>   - AOP 事务
+>   ~~~
+>
+> - 注解
+>
+>   2. 实例化对象到 Spring 容器：@Component、@Controller、@Service、@Repository
+>
+>   3. 注入对象：@Autowired、@Qualifier、@Resource
+>
+>   4. 开启包扫描
+>
+>      ~~~xml
+>      <context:component-scan base-package="com.dfbz"/>
+>      ~~~
+>
+>   5. 测试
+>
+>      ~~~java
+>      /**
+>       * 将 Mapper 的声明转交给 Service
+>       * 其初始化暂时由 Service 的构造方法实现（待注入）
+>       */
+>      @RunWith(SpringJUnit4ClassRunner.class)
+>      @ContextConfiguration(locations = {"classpath:spring.xml"})
+>      public class UserTest {
+>          @Autowired
+>          UserController userController;
+>          @Test
+>          public void test_Spring_MyBatis() {
+>              userController.listUser();
+>          }
+>      }
+>      ~~~
+>
+>   
+
+### <font color="lightskyblue">SpringMVC</font>
+
+> 1. 导入依赖
+>
+>    ~~~txt
+>    - spring-webmvc	
+>    	- spring-context
+>            - spring-beans
+>            - spring-core
+>            - spring-expression
+>            - spring-aop
+>    	- spring-web
+>    - servlet-api
+>    ~~~
+>
+> 2. 配置 web.xml
+>
+>    ~~~xml
+>    - DispatcherServlet
+>    	- 声明初始化变量：
+> 		<init-param>
+>    			<param-name>contextConfigLocation</param-name>
+>    			<param-value>classpath:spring.xml</param-value>
+>    		</init-param>
+>    - characterEncodingFilter
+>    ~~~
+>    
+> 3. 为 Controller 配置请求路径
+>
+>    ~~~java
+>    @Controller("userController")
+>    @RequestMapping("/user")
+>    public class UserController {
+>        @Autowired
+>        private UserService userService;
+>        @RequestMapping("/listUser")
+>        public void listUser(){
+>            userService.listUser().forEach(u -> System.out.println(u));
+>        }
+>    }
+>    ~~~
+>
+> 4. 测试
+>
+>    ~~~txt
+>    http://.../user/listUser
+>    ~~~
+>
+>    
 
 
 
 
 
+## 整合
+
+### [Spring - MyBatis](干掉 MyBatis.cfg.xml)
+
+- MyBatis 核心配置文件的任务：
+
+  ~~~xml
+  - 加载配置文件：<properties>
+  - 设置别名：<typeAliases>
+  - 配置环境：<environment>
+  	- 事务管理：JDBC
+  	- 数据源：POOLED
+  		- 数据源各种属性
+  - 加载 Mapper 映射文件：<mappers>
+  ~~~
+
+- 转交 Spring.xml
+
+  > 1. 导入依赖
+  >
+  >    ~~~txt
+  >    - mybatis-spring
+  >    - druid
+  >    - spring-jdbc
+  >    ~~~
+  >
+  > 2. 修改 Spring.xml
+  >
+  >    ~~~xml
+  >    <!-- 1. 加载数据库配置文件 -->
+  >    <context:property-placeholder location="classpath:druid.properties" 
+  >                                  file-encoding="UTF-8"/>
+  >    
+  >    <!-- 2. 配置数据源 -->
+  >    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+  >        <property name="driver" value="${druid.driver}"/>
+  >        <property name="url" value="${druid.url}"/>
+  >        <property name="username" value="${druid.username}"/>
+  >        <property name="password" value="${druid.password}"/>
+  >    </bean>
+  >    
+  >    <!-- 3. 配置 SqlSessionFactory（MyBatis 整合 Spring 包下的） -->
+  >    <bean class="org.mybatis.spring.SqlSessionFactoryBean">
+  >        <!-- 加载数据源 -->
+  >        <property name="dataSource" ref="dataSource"/>
+  >        <!-- 加载 MyBatis 核心配置（一般不配） -->
+  >     <property name="configLocation" value="classpath:MyBatis.cfg.xml"/>
+>        <!-- 加载 Mapper 映射文件（当文件名与 Mapper 一致时，可以不配（常用）） -->
+  >        <property name="mapperLocations" value="classpath:com/dfbz/mapper/*.xml"/>
+>    </bean>
+  >    
+  >    <!-- 4. 配置包扫描：扫描该包下的 Mapper -->
+  >    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+  >        <property name="basePackage" value="com.dfbz.mapper"/>
+  >    </bean>
+  >    ~~~
+  >    
+  >    ~~~txt
+  >    - MyBatis.cfg.xml 只用于修改一些默认配置
+  >    - Mapper 映射文件与 Mapper 同名时会被自动引用，可以不配置
+  >    
+  >    ~~~
+  >    
+  > 3. 测试
+  >
+  >    ~~~txt
+  >    http://.../user/listUser
+  >    ~~~
+  >
+  >    
+  
+  
+  
+  
 
 
 
