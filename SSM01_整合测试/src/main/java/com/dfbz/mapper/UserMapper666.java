@@ -9,7 +9,7 @@ import java.util.List;
  * @company 东方标准
  * @date 2019/12/20 9:01
  */
-public interface UserMapper {
+public interface UserMapper666 {
 
     List<User> findAllUser();
 

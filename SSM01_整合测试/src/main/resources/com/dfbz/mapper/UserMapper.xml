@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "mybatis-3-mapper.dtd" >
-<mapper namespace="com.dfbz.mapper.UserMapper">
+
+<mapper namespace="com.dfbz.mapper.UserMapper666">
 
     <resultMap id="rm_user" type="com.dfbz.domain.User">
         <id property="username" column="username"/>
@@ -8,7 +9,7 @@
     </resultMap>
 
 
-    <select id="findAllUser" resultType="com.dfbz.domain.User">
+    <select id="findAllUser" resultMap="rm_user">
         select * from t_user
     </select>
 
